@@ -1,0 +1,8 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.m_w_k.synapse.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "mixins": [],
+  "client": []
+}
