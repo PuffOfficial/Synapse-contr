@@ -1,6 +1,7 @@
 package com.m_w_k.synapse;
 
 import com.m_w_k.synapse.client.renderer.TestAxonRenderer;
+import com.m_w_k.synapse.data.SynapseLootTableGen;
 import com.m_w_k.synapse.registry.SynapseBlockEntityRegistry;
 import com.m_w_k.synapse.registry.SynapseBlockRegistry;
 import com.m_w_k.synapse.registry.SynapseCreativeTabsRegistry;
@@ -9,16 +10,11 @@ import com.mojang.logging.LogUtils;
 import net.minecraft.data.DataGenerator;
 import net.minecraft.data.PackOutput;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.EntityRenderersEvent;
-import net.minecraftforge.client.event.ModelEvent;
 import net.minecraftforge.common.data.ExistingFileHelper;
 import net.minecraftforge.data.event.GatherDataEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.fml.DistExecutor;
-import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.config.ModConfig;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import org.slf4j.Logger;
 
@@ -31,6 +27,7 @@ public class SynapseMod {
         IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
         registries(modEventBus);
         modEventBus.addListener(this::registerRenderers);
+        modEventBus.addListener(this::gatherData);
     }
 
     private void registries(IEventBus bus) {
@@ -41,12 +38,20 @@ public class SynapseMod {
     }
 
     public void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
-        event.registerBlockEntityRenderer(SynapseBlockEntityRegistry.TEST_BLOCK.get(), TestAxonRenderer::new);
+        event.registerBlockEntityRenderer(SynapseBlockEntityRegistry.DISTRIBUTOR_BLOCK.get(), TestAxonRenderer::new);
+        event.registerBlockEntityRenderer(SynapseBlockEntityRegistry.DAS_BLOCK.get(), TestAxonRenderer::new);
+        event.registerBlockEntityRenderer(SynapseBlockEntityRegistry.ENDPOINT_BLOCK.get(), TestAxonRenderer::new);
+        event.registerBlockEntityRenderer(SynapseBlockEntityRegistry.RELAY_BLOCK.get(), TestAxonRenderer::new);
     }
 
     public void gatherData(GatherDataEvent event) {
         DataGenerator gen = event.getGenerator();
         PackOutput packOutput = gen.getPackOutput();
         ExistingFileHelper helper = event.getExistingFileHelper();
+        gen.addProvider(event.includeServer(), SynapseLootTableGen.INSTANCE);
+    }
+
+    public static ResourceLocation resLoc(String path) {
+        return new ResourceLocation(MODID, path);
     }
 }

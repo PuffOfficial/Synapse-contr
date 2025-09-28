@@ -1,0 +1,91 @@
+{
+  "type": "minecraft:block",
+  "pools": [
+    {
+      "bonus_rolls": 0.0,
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "functions": [
+            {
+              "add": false,
+              "conditions": [
+                {
+                  "block": "synapse:endpoint_basic",
+                  "condition": "minecraft:block_state_property",
+                  "properties": {
+                    "endpoints": "2"
+                  }
+                }
+              ],
+              "count": 2.0,
+              "function": "minecraft:set_count"
+            },
+            {
+              "add": false,
+              "conditions": [
+                {
+                  "block": "synapse:endpoint_basic",
+                  "condition": "minecraft:block_state_property",
+                  "properties": {
+                    "endpoints": "3"
+                  }
+                }
+              ],
+              "count": 3.0,
+              "function": "minecraft:set_count"
+            },
+            {
+              "add": false,
+              "conditions": [
+                {
+                  "block": "synapse:endpoint_basic",
+                  "condition": "minecraft:block_state_property",
+                  "properties": {
+                    "endpoints": "4"
+                  }
+                }
+              ],
+              "count": 4.0,
+              "function": "minecraft:set_count"
+            },
+            {
+              "add": false,
+              "conditions": [
+                {
+                  "block": "synapse:endpoint_basic",
+                  "condition": "minecraft:block_state_property",
+                  "properties": {
+                    "endpoints": "5"
+                  }
+                }
+              ],
+              "count": 5.0,
+              "function": "minecraft:set_count"
+            },
+            {
+              "add": false,
+              "conditions": [
+                {
+                  "block": "synapse:endpoint_basic",
+                  "condition": "minecraft:block_state_property",
+                  "properties": {
+                    "endpoints": "6"
+                  }
+                }
+              ],
+              "count": 6.0,
+              "function": "minecraft:set_count"
+            },
+            {
+              "function": "minecraft:explosion_decay"
+            }
+          ],
+          "name": "synapse:endpoint_basic"
+        }
+      ],
+      "rolls": 1.0
+    }
+  ],
+  "random_sequence": "synapse:blocks/endpoint_basic"
+}
