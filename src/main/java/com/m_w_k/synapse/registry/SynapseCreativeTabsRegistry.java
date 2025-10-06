@@ -17,7 +17,7 @@ public abstract class SynapseCreativeTabsRegistry {
     public static final RegistryObject<CreativeModeTab> SYNAPSE_TAB = CREATIVE_MODE_TABS.register("synapse_tab", () -> CreativeModeTab.builder()
             .title(Component.translatable("itemGroup.synapse"))
             .withTabsBefore(CreativeModeTabs.REDSTONE_BLOCKS)
-            .icon(() -> new ItemStack(SynapseBlockRegistry.DISTRIBUTOR_BLOCK_1.get().asItem()))
+            .icon(() -> new ItemStack(SynapseItemRegistry.PIEZOELECTRIC_CRYSTAL.get().asItem()))
             .displayItems((parameters, output) -> {
                 output.acceptAll(SynapseBlockRegistry.BLOCKS.getEntries().stream().map(r -> new ItemStack(r.get())).toList());
                 output.acceptAll(SynapseItemRegistry.ITEMS.getEntries().stream().map(r -> new ItemStack(r.get())).toList());

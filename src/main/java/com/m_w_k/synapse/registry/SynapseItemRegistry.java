@@ -20,6 +20,9 @@ public abstract class SynapseItemRegistry {
     public static final RegistryObject<AxonItem> FLUID_AXON = ITEMS.register("axon.fluid",
             () -> new AxonItem(new Item.Properties(), AxonType.FLUID));
 
+    public static final RegistryObject<Item> PIEZOELECTRIC_CRYSTAL = ITEMS.register("piezoelectric_crystal",
+            () -> new Item(new Item.Properties()));
+
     public static void init(IEventBus bus) {
         ITEMS.register(bus);
     }
