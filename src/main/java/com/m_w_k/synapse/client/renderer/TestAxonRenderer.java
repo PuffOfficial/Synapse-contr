@@ -36,35 +36,35 @@ public class TestAxonRenderer implements BlockEntityRenderer<AxonBlockEntity> {
         Vec3 source = be.getBlockPos().getCenter();
         pose.translate(-pos.getX(), -pos.getY(), -pos.getZ());
         for (int i = 0; i < be.getSlots(); i++) {
-            for (LocalAxonConnection connected : be.getBySlot(i).upstream().values()) {
-                Vec3 testSource = source.add(connected.getSourceRenderOffset());
-                Vec3 testTarget = connected.getTargetPos().getCenter().add(connected.getTargetRenderOffset());
-                int points = 1 + (int) (curveLength(testSource, testTarget) * 2);
-                Vec3[] ropePoints = new Vec3[points];
-                for (int j = 0; j < points; j++) {
-                    double lerp = (double) j / points;
-                    double ylerped = testTarget.y > testSource.y
-                            ? testSource.y + lerp * lerp * (testTarget.y - testSource.y)
-                            : testTarget.y + (1 - lerp) * (1 - lerp) * (testSource.y - testTarget.y);
-                    ropePoints[j] = new Vec3(testSource.x + lerp * (testTarget.x - testSource.x),
-                            ylerped,
-                            testSource.z + lerp * (testTarget.z - testSource.z));
-                }
-                TextureAtlasSprite sprite = Minecraft.getInstance().getModelManager().getAtlas(InventoryMenu.BLOCK_ATLAS).getSprite(testTex);
+            LocalAxonConnection connected = be.getBySlot(i).upstream();
+            if (connected == null) continue;
+            Vec3 testSource = source.add(connected.getSourceRenderOffset());
+            Vec3 testTarget = connected.getTargetPos().getCenter().add(connected.getTargetRenderOffset());
+            int points = 1 + (int) (curveLength(testSource, testTarget) * 2);
+            Vec3[] ropePoints = new Vec3[points];
+            for (int j = 0; j < points; j++) {
+                double lerp = (double) j / points;
+                double ylerped = testTarget.y > testSource.y
+                        ? testSource.y + lerp * lerp * (testTarget.y - testSource.y)
+                        : testTarget.y + (1 - lerp) * (1 - lerp) * (testSource.y - testTarget.y);
+                ropePoints[j] = new Vec3(testSource.x + lerp * (testTarget.x - testSource.x),
+                        ylerped,
+                        testSource.z + lerp * (testTarget.z - testSource.z));
+            }
+            TextureAtlasSprite sprite = Minecraft.getInstance().getModelManager().getAtlas(InventoryMenu.BLOCK_ATLAS).getSprite(testTex);
 
-                VertexConsumer buffer = bufferSource.getBuffer(RenderType.solid());
-                for (int j = 0; j < points - 1; j++) {
-                    Vec3 start = ropePoints[j];
-                    Vec3 end = ropePoints[j + 1];
+            VertexConsumer buffer = bufferSource.getBuffer(RenderType.solid());
+            for (int j = 0; j < points - 1; j++) {
+                Vec3 start = ropePoints[j];
+                Vec3 end = ropePoints[j + 1];
 
-                    Vec3 midpoint = start.lerp(end, 0.5);
-                    int sectionLight = LevelRenderer.getLightColor(be.getLevel(), BlockPos.containing(midpoint.x, midpoint.y, midpoint.z));
+                Vec3 midpoint = start.lerp(end, 0.5);
+                int sectionLight = LevelRenderer.getLightColor(be.getLevel(), BlockPos.containing(midpoint.x, midpoint.y, midpoint.z));
 
-                    Vec3 rope = end.subtract(start);
-                    Vec3 ropePrev = j > 0 ? start.subtract(ropePoints[j - 1]).add(rope) : rope;
-                    Vec3 ropeNext = j < points - 2 ? ropePoints[j + 2].subtract(end).add(rope) : rope;
-                    box(buffer, pose, start, end, ropeNext, ropePrev, sprite, j, sectionLight, overlay);
-                }
+                Vec3 rope = end.subtract(start);
+                Vec3 ropePrev = j > 0 ? start.subtract(ropePoints[j - 1]).add(rope) : rope;
+                Vec3 ropeNext = j < points - 2 ? ropePoints[j + 2].subtract(end).add(rope) : rope;
+                box(buffer, pose, start, end, ropeNext, ropePrev, sprite, j, sectionLight, overlay);
             }
         }
         pose.popPose();

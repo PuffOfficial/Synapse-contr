@@ -1,22 +1,18 @@
 package com.m_w_k.synapse.common.connect;
 
+import com.m_w_k.synapse.api.block.IFacedAxonBlockEntity;
 import com.m_w_k.synapse.api.connect.AxonTree;
 import com.m_w_k.synapse.api.connect.AxonType;
-import com.m_w_k.synapse.common.block.entity.AxonBlockEntity;
-import com.m_w_k.synapse.common.block.entity.FacedAxonBlockEntity;
-import it.unimi.dsi.fastutil.ints.IntObjectPair;
 import net.minecraft.core.Direction;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.items.IItemHandler;
-import net.minecraftforge.items.IItemHandlerModifiable;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;
-import java.util.Optional;
 
 public class ItemExposer extends AbstractExposer<IItemHandler, ItemExposer> implements IItemHandler {
 
-    public ItemExposer(@NotNull FacedAxonBlockEntity owner) {
+    public ItemExposer(@NotNull IFacedAxonBlockEntity owner) {
         super(owner);
     }
 
@@ -52,6 +48,14 @@ public class ItemExposer extends AbstractExposer<IItemHandler, ItemExposer> impl
         return fallback;
     }
 
+    protected long volume(ItemStack stack) {
+        return stack.getCount() * 64L / stack.getMaxStackSize();
+    }
+
+    protected int count(ItemStack stack, long volume) {
+        return (int) (volume * stack.getMaxStackSize() / 64);
+    }
+
     @Override
     public @NotNull ItemStack getStackInSlot(int slot) {
         return handlerAtSlot(slot, ItemStack.EMPTY, (s, h, c) -> h.getStackInSlot(s));
@@ -61,12 +65,16 @@ public class ItemExposer extends AbstractExposer<IItemHandler, ItemExposer> impl
     public @NotNull ItemStack insertItem(int slot, @NotNull ItemStack stack, boolean simulate) {
         return handlerAtSlot(slot, stack, (s, h, c) -> {
             ItemStack staack = stack;
-            long lim = getAllowed(staack.getCount(), c);
+            long lim = count(staack, getAllowed(volume(staack), c));
             if (lim < staack.getCount()) {
                 staack = staack.copyWithCount((int) lim);
             }
-            ItemStack ret = h.insertItem(s, staack, simulate);
-            if (!simulate) consumeCapacity(staack.getCount(), c);
+            staack = h.insertItem(s, staack, simulate);
+            ItemStack ret = stack.copyWithCount(staack.getCount() + stack.getCount() - (int) lim);
+            if (!simulate) {
+                staack.setCount(stack.getCount() - ret.getCount());
+                consumeCapacity(volume(staack), c);
+            }
             return ret;
         });
     }
@@ -74,13 +82,15 @@ public class ItemExposer extends AbstractExposer<IItemHandler, ItemExposer> impl
     @Override
     public @NotNull ItemStack extractItem(int slot, int amount, boolean simulate) {
         return handlerAtSlot(slot, ItemStack.EMPTY, (s, h, c) -> {
+            ItemStack stack = h.extractItem(s, amount, true);
+            if (stack.isEmpty()) return ItemStack.EMPTY;
             int aamount = amount;
-            long lim = getAllowed(aamount, c);
+            long lim = count(stack, getAllowed(volume(stack), c));
             if (lim < aamount) {
                 aamount = (int) lim;
             }
             ItemStack ret = h.extractItem(s, aamount, simulate);
-            if (!simulate) consumeCapacity(aamount, c);
+            if (!simulate) consumeCapacity(volume(ret), c);
             return ret;
         });
     }

@@ -3,8 +3,11 @@ package com.m_w_k.synapse.common.block;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.m_w_k.synapse.SynapseUtil;
+import com.m_w_k.synapse.api.block.AxonDeviceDefinitions;
 import com.m_w_k.synapse.common.block.entity.EndpointBlockEntity;
+import com.m_w_k.synapse.common.item.AxonItem;
 import com.m_w_k.synapse.registry.SynapseBlockEntityRegistry;
+import it.unimi.dsi.fastutil.Pair;
 import net.minecraft.Util;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -59,6 +62,9 @@ public class EndpointBlock extends AxonBlock implements SimpleWaterloggedBlock {
 
     @Override
     protected int determineHitSlot(@NotNull BlockState state, @NotNull Level level, @NotNull BlockPos pos, @NotNull Player player, @NotNull InteractionHand hand, @NotNull BlockHitResult hit) {
+        if (player.getItemInHand(hand).getItem() instanceof AxonItem iAxon) {
+            return AxonDeviceDefinitions.endpoint(iAxon.getType(), hit.getDirection());
+        }
         return hit.getDirection().ordinal();
     }
 

@@ -1,20 +1,17 @@
 package com.m_w_k.synapse.common.connect;
 
+import com.m_w_k.synapse.api.block.IFacedAxonBlockEntity;
 import com.m_w_k.synapse.api.connect.AxonTree;
 import com.m_w_k.synapse.api.connect.AxonType;
-import com.m_w_k.synapse.common.block.entity.AxonBlockEntity;
-import com.m_w_k.synapse.common.block.entity.FacedAxonBlockEntity;
 import net.minecraft.core.Direction;
-import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.energy.IEnergyStorage;
-import net.minecraftforge.items.IItemHandler;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;
 
 public class EnergyExposer extends AbstractExposer<IEnergyStorage, EnergyExposer> implements IEnergyStorage {
 
-    public EnergyExposer(@NotNull FacedAxonBlockEntity owner) {
+    public EnergyExposer(@NotNull IFacedAxonBlockEntity owner) {
         super(owner);
     }
 

@@ -10,7 +10,7 @@ import net.minecraft.world.level.block.state.BlockState;
  * For example, the "cobblestone" alias could be associated with an address, and then
  * configuration allows for sending any request involving cobblestone to the cobblestone alias.
  */
-public class DASBlockEntity extends AxonBlockEntity {
+public class DASBlockEntity extends TypedAxonBlockEntity {
     public DASBlockEntity(BlockPos pos, BlockState state) {
         super(SynapseBlockEntityRegistry.DAS_BLOCK.get(), pos, state, ConnectorLevel.ENDPOINT);
     }

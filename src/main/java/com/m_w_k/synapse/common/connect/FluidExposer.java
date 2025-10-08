@@ -2,19 +2,17 @@ package com.m_w_k.synapse.common.connect;
 
 import com.m_w_k.synapse.api.connect.AxonTree;
 import com.m_w_k.synapse.api.connect.AxonType;
-import com.m_w_k.synapse.common.block.entity.AxonBlockEntity;
-import com.m_w_k.synapse.common.block.entity.FacedAxonBlockEntity;
+import com.m_w_k.synapse.api.block.IFacedAxonBlockEntity;
 import net.minecraft.core.Direction;
 import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.fluids.capability.IFluidHandler;
-import net.minecraftforge.items.IItemHandler;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;
 
 public class FluidExposer extends AbstractExposer<IFluidHandler, FluidExposer> implements IFluidHandler {
 
-    public FluidExposer(@NotNull FacedAxonBlockEntity owner) {
+    public FluidExposer(@NotNull IFacedAxonBlockEntity owner) {
         super(owner);
     }
 

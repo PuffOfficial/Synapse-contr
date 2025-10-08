@@ -59,7 +59,7 @@ public class AxonTree<T> extends SavedData {
             setDirty();
             return new ConnectorData(identifier, level);
         });
-        data.setCap(cap);
+        if (cap != null) data.setCap(cap);
         return data;
     }
 
@@ -69,6 +69,7 @@ public class AxonTree<T> extends SavedData {
      */
     public void retire(@NotNull UUID uuid) {
         ConnectorData data = members.remove(uuid);
+        if (data == null) return;
         if (data.getUpstream() != null) data.getUpstream().removeDownstream(uuid);
         data.downstream().forEachRemaining(ConnectorData::removeUpstream);
     }
@@ -270,7 +271,6 @@ public class AxonTree<T> extends SavedData {
         public static final UUID NO_UPSTREAM = new UUID(0, 0);
 
         private final @NotNull AxonAddress address;
-        private short id;
 
         public final @NotNull ConnectorLevel level;
         private @Nullable T cap;
@@ -281,7 +281,7 @@ public class AxonTree<T> extends SavedData {
         private final @NotNull Map<UUID, ConnectorData> downstream;
 
         public ConnectorData(short id, @NotNull ConnectorLevel level) {
-            this.address = new AxonAddress();
+            this.address = new AxonAddress().setWildcards(false);
             this.address.put(level, id);
             this.level = level;
             this.upstream = NO_UPSTREAM;
@@ -290,11 +290,6 @@ public class AxonTree<T> extends SavedData {
 
         private ConnectorData(@NotNull AxonAddress address, @NotNull ConnectorLevel level) {
             this.address = address;
-            this.id = address.getShort(level);
-            if (this.id < 0 && address.containsKey(level)) {
-                this.id = 0;
-                address.put(level, (short) 0);
-            }
             this.level = level;
             this.upstream = NO_UPSTREAM;
             downstream = new Reference2ObjectOpenHashMap<>();
@@ -307,14 +302,14 @@ public class AxonTree<T> extends SavedData {
          * the new ID would conflict with another connector under our upstream.
          */
         public boolean setId(@Range(from = 0, to = Short.MAX_VALUE) short id) {
-            if (this.id == id) return true;
+            if (id == AxonAddress.EMPTY) return false;
+            if (this.getId() == id) return true;
             if (hasUpstream()) {
                 for (@NotNull Iterator<ConnectorData> it = getUpstream().downstream(); it.hasNext(); ) {
                     ConnectorData conflictCandidate = it.next();
                     if (id == conflictCandidate.getId()) return false;
                 }
             }
-            this.id = id;
             updateCascade(level, id);
             setDirty();
             return true;
@@ -324,7 +319,7 @@ public class AxonTree<T> extends SavedData {
          * @return the current ID of this connector.
          */
         public short getId() {
-            return id;
+            return getAddress().getShort(level);
         }
 
         private void updateCascade(@NotNull ConnectorLevel level, short id) {
@@ -438,8 +433,8 @@ public class AxonTree<T> extends SavedData {
         }
 
         static <T> AxonTree<T>.@NotNull ConnectorData from(@NotNull AxonTree<T> tree, @NotNull CompoundTag nbt) {
-            AxonTree<T>.ConnectorData d = ConnectorLevel.CODEC.parse(NbtOps.INSTANCE, nbt.getCompound("Level")).result()
-                    .map(connectionTier -> tree.new ConnectorData(AxonAddress.CODEC.parse(NbtOps.INSTANCE, nbt.getCompound("Address"))
+            AxonTree<T>.ConnectorData d = ConnectorLevel.CODEC.parse(NbtOps.INSTANCE, nbt.get("Level")).result()
+                    .map(connectionTier -> tree.new ConnectorData(AxonAddress.CODEC.parse(NbtOps.INSTANCE, nbt.get("Address"))
                     .result().orElseGet(AxonAddress::new), connectionTier))
                     .orElseGet(() -> tree.new ConnectorData((short) 0, ConnectorLevel.RELAY));
             d.deserializeNBT(nbt);
@@ -451,7 +446,7 @@ public class AxonTree<T> extends SavedData {
             if (nbt.hasUUID("Upstream")) {
                 this.upstream = nbt.getUUID("Upstream");
                 this.upstreamCache = null;
-                AxonConnection.CODEC.parse(NbtOps.INSTANCE, nbt.getCompound("Connection")).get()
+                AxonConnection.CODEC.parse(NbtOps.INSTANCE, nbt.get("Connection")).get()
                         .ifLeft(c -> upstreamConnection = c)
                         .ifRight(r -> upstreamConnection = new AxonConnection(getType()));
             }

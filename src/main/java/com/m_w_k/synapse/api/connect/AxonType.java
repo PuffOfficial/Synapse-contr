@@ -28,12 +28,11 @@ public enum AxonType implements StringRepresentable, IExtensibleEnum {
         long consumed = d.getInt("Consumed");
         if (t > 0) {
             int refreshInterval = 10;
-            int timeSum = t + d.getInt("TimeSum");
-            d.putInt("TimeSum", timeSum % refreshInterval);
+            t = t + d.getInt("TimeSum");
+            d.putInt("TimeSum", t % refreshInterval);
             t = t / refreshInterval;
             if (t > 0) {
-                long gap = capacity - consumed;
-                capacity += gap;
+                capacity += Math.min(baseStackCap * 64, consumed);
                 d.remove("Consumed");
                 consumed = 0;
                 if (t > 1) {
@@ -51,12 +50,11 @@ public enum AxonType implements StringRepresentable, IExtensibleEnum {
         int consumed = d.getInt("Consumed");
         if (t > 0) {
             int refreshInterval = 10;
-            int timeSum = t + d.getInt("TimeSum");
-            d.putInt("TimeSum", timeSum % refreshInterval);
+            t = t + d.getInt("TimeSum");
+            d.putInt("TimeSum", t % refreshInterval);
             t = t / refreshInterval;
             if (t > 0) {
-                long gap = capacity - consumed;
-                capacity += gap;
+                capacity += Math.min(consumed, baseCap);
                 d.remove("Consumed");
                 consumed = 0;
                 if (t > 1) {

@@ -1,4 +1,7 @@
 {
-  "itemGroup.synapse": "Synapse"
+  "itemGroup.synapse": "Synapse",
+  "synapse.menu.title.basic_connector": "Addressing",
+  "synapse.menu.search": "Search",
+  "synapse.menu.address_config": "Device ID"
 
 }

@@ -3,7 +3,7 @@ package com.m_w_k.synapse.common.connect;
 import com.m_w_k.synapse.api.connect.AxonAddress;
 import com.m_w_k.synapse.api.connect.AxonTree;
 import com.m_w_k.synapse.api.connect.AxonType;
-import com.m_w_k.synapse.common.block.entity.FacedAxonBlockEntity;
+import com.m_w_k.synapse.api.block.IFacedAxonBlockEntity;
 import com.mojang.datafixers.util.Either;
 import com.mojang.datafixers.util.Pair;
 import net.minecraft.core.Direction;
@@ -16,14 +16,14 @@ import java.util.EnumMap;
 import java.util.List;
 
 public abstract class AbstractExposer<T, V extends AbstractExposer<T, V>> {
-    protected final @NotNull FacedAxonBlockEntity owner;
+    protected final @NotNull IFacedAxonBlockEntity owner;
 
     protected @Nullable List<AxonTree.Connection<T>> cache;
     protected long cacheTick;
 
     protected final @NotNull Either<Pair<Direction, V>, EnumMap<Direction, V>> associated;
 
-    protected AbstractExposer(@NotNull FacedAxonBlockEntity owner) {
+    protected AbstractExposer(@NotNull IFacedAxonBlockEntity owner) {
         this.owner = owner;
         associated = Either.right(new EnumMap<>(Direction.class));
     }
@@ -49,7 +49,7 @@ public abstract class AbstractExposer<T, V extends AbstractExposer<T, V>> {
         return (Capability<T>) getType().getCapability();
     }
 
-    public @NotNull FacedAxonBlockEntity getOwner() {
+    public @NotNull IFacedAxonBlockEntity getOwner() {
         return owner;
     }
 
@@ -59,7 +59,7 @@ public abstract class AbstractExposer<T, V extends AbstractExposer<T, V>> {
             long time = getOwner().getLevel().getGameTime();
             if (time != cacheTick || cache == null) {
                 cache = AxonTree.load(getOwner().getLevel(), getType(), getCapability())
-                        .map(t -> t.find(getOwner().getByFace(associated.left().get().getFirst()).treeID(), AxonAddress.wildcard(true)))
+                        .map(t -> t.find(getOwner().getByFace(associated.left().get().getFirst(), getType()).treeID(), AxonAddress.wildcard(true)))
                         .orElse(List.of());
                 if (!cache.isEmpty() && cache.get(0).connection().isEmpty()) {
                     cache.remove(0);

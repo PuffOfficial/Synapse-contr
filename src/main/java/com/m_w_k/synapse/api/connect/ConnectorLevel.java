@@ -1,15 +1,28 @@
 package com.m_w_k.synapse.api.connect;
 
 import com.mojang.serialization.Codec;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import it.unimi.dsi.fastutil.objects.ObjectRBTreeSet;
 import net.minecraft.util.StringRepresentable;
 import net.minecraftforge.common.IExtensibleEnum;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.Comparator;
+import java.util.List;
 
 public enum ConnectorLevel implements StringRepresentable, IExtensibleEnum {
     ENDPOINT(0), RELAY(Double.NEGATIVE_INFINITY),
     DISTRIBUTOR_1(1), DISTRIBUTOR_2(2), DISTRIBUTOR_3(3);
 
     public static final Codec<ConnectorLevel> CODEC = IExtensibleEnum.createCodecForExtensibleEnum(ConnectorLevel::values, ConnectorLevel::valueOf);
+
+    public static final ObjectRBTreeSet<ConnectorLevel> ADDRESS_SPACE = new ObjectRBTreeSet<>(Comparator.comparingDouble(ConnectorLevel::getPrio).reversed());
+
+    static {
+        ADDRESS_SPACE.add(DISTRIBUTOR_1);
+        ADDRESS_SPACE.add(DISTRIBUTOR_2);
+        ADDRESS_SPACE.add(DISTRIBUTOR_3);
+    }
 
     private final double prio;
 

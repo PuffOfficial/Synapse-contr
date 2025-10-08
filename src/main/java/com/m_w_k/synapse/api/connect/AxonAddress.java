@@ -2,9 +2,15 @@ package com.m_w_k.synapse.api.connect;
 
 import com.mojang.datafixers.util.Either;
 import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
+import it.unimi.dsi.fastutil.objects.AbstractObject2ShortFunction;
+import it.unimi.dsi.fastutil.objects.Object2ShortMap;
 import it.unimi.dsi.fastutil.objects.Object2ShortRBTreeMap;
+import it.unimi.dsi.fastutil.objects.ObjectBidirectionalIterator;
 import it.unimi.dsi.fastutil.shorts.ShortArrayList;
 import it.unimi.dsi.fastutil.shorts.ShortList;
+import net.minecraft.network.FriendlyByteBuf;
+import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Comparator;
@@ -13,11 +19,18 @@ import java.util.function.UnaryOperator;
 
 public final class AxonAddress extends Object2ShortRBTreeMap<ConnectorLevel> {
 
-    public static final Codec<AxonAddress> CODEC = Codec.unboundedMap(ConnectorLevel.CODEC, Codec.SHORT).xmap(AxonAddress::new, UnaryOperator.identity());
+    public static final Codec<AxonAddress> CODEC = RecordCodecBuilder.create(instance ->
+            instance.group(
+                    Codec.unboundedMap(ConnectorLevel.CODEC, Codec.SHORT).xmap(AxonAddress::new, UnaryOperator.identity()).fieldOf("map").forGetter(UnaryOperator.identity()),
+                    Codec.SHORT.fieldOf("defret").forGetter(AxonAddress::defaultReturnValue),
+                    Codec.BOOL.fieldOf("wild").forGetter(AxonAddress::isWildcards)
+            ).apply(instance, AxonAddress::new));
 
     public static final short WILDCARD = -1;
     public static final short UNIVERSAL_WILDCARD = -2;
-    public static final short EMPTY = -3;
+    public static final short EMPTY = 0;
+
+    private boolean wildcards = true;
 
     public AxonAddress() {
         super(Comparator.comparingDouble(ConnectorLevel::getPrio));
@@ -29,8 +42,24 @@ public final class AxonAddress extends Object2ShortRBTreeMap<ConnectorLevel> {
         putAll(map);
     }
 
+    public AxonAddress(Map<ConnectorLevel, Short> map, short defret, boolean wildcards) {
+        this(map);
+        defaultReturnValue(defret);
+        this.wildcards = wildcards;
+    }
+
+    @Contract(value = "_ -> this", mutates = "this")
+    public AxonAddress setWildcards(boolean wildcards) {
+        this.wildcards = wildcards;
+        return this;
+    }
+
+    public boolean isWildcards() {
+        return wildcards;
+    }
+
     public @NotNull AxonAddress copy() {
-        return new AxonAddress(this);
+        return new AxonAddress(this).setWildcards(isWildcards());
     }
 
     public void copyAbove(@NotNull AxonAddress source, @NotNull ConnectorLevel level) {
@@ -42,15 +71,11 @@ public final class AxonAddress extends Object2ShortRBTreeMap<ConnectorLevel> {
     }
 
     public void clearAbove(@NotNull ConnectorLevel level) {
-        for (var entry : object2ShortEntrySet()) {
-            if (entry.getKey().getPrio() > level.getPrio()) {
-                removeShort(level);
-            }
-        }
+        keySet().removeIf(l -> l.getPrio() > level.getPrio());
     }
 
     /**
-     * Creates a wildcard address for matching with other addresses. The wildcardness is not preserved through Codec read/write.
+     * Creates a wildcard address for matching with other addresses.
      * @param universal whether the wildcard should match empty address sections as well.
      * @return an address that by default matches with any other address, and can have specificity added.
      */
@@ -70,8 +95,7 @@ public final class AxonAddress extends Object2ShortRBTreeMap<ConnectorLevel> {
 
     public short[] getAddress() {
         ShortList list = new ShortArrayList(this.size());
-        for (ConnectorLevel tier : ConnectorLevel.values()) {
-            if (!Double.isFinite(tier.getPrio())) continue;
+        for (ConnectorLevel tier : ConnectorLevel.ADDRESS_SPACE) {
             list.add(this.getShort(tier));
         }
         return list.toShortArray();
@@ -97,11 +121,34 @@ public final class AxonAddress extends Object2ShortRBTreeMap<ConnectorLevel> {
 
     public boolean matchesAt(@NotNull AxonAddress other, @NotNull ConnectorLevel tier) {
         short us = this.getShort(tier);
-        if (us == UNIVERSAL_WILDCARD) return true;
+        if (isWildcards() && us == UNIVERSAL_WILDCARD) return true;
         short them = other.getShort(tier);
-        if (them == UNIVERSAL_WILDCARD) return true;
+        if (other.isWildcards() && them == UNIVERSAL_WILDCARD) return true;
         if (us == them) return true;
-        return (us != EMPTY && them == WILDCARD) || (them != EMPTY && us == WILDCARD);
+        if (us == EMPTY || them == EMPTY) return false;
+        return (isWildcards() && us == WILDCARD) || (other.isWildcards() && them == WILDCARD);
+    }
+
+    public static String toHex(short value, boolean wildcards) {
+        switch (value) {
+            case EMPTY:
+                return "";
+            case UNIVERSAL_WILDCARD:
+                if (wildcards) return "**";
+            case WILDCARD:
+                if (wildcards) return "*";
+            default:
+                return Integer.toHexString(value & 0xffff);
+        }
+    }
+
+    public static short fromHex(String value) {
+        return switch (value) {
+            case "" -> EMPTY;
+            case "**" -> UNIVERSAL_WILDCARD;
+            case "*" -> WILDCARD;
+            default -> (short) Integer.parseInt(value, 16);
+        };
     }
 
     /**
@@ -116,8 +163,7 @@ public final class AxonAddress extends Object2ShortRBTreeMap<ConnectorLevel> {
         try {
             AxonAddress buildingAddress = new AxonAddress();
             if (split.length == 2) {
-                short port = Short.parseShort(split[1], 16);
-                buildingAddress.put(ConnectorLevel.ENDPOINT, port);
+                buildingAddress.put(ConnectorLevel.ENDPOINT, fromHex(split[1]));
             }
             split = split[0].split("\\.");
             ConnectorLevel[] tiers = ConnectorLevel.values();
@@ -125,12 +171,7 @@ public final class AxonAddress extends Object2ShortRBTreeMap<ConnectorLevel> {
                 return Either.right(ParseFailure.TOO_LONG);
             }
             for (int i = 0; i < split.length; i++) {
-                buildingAddress.put(tiers[i + 2], switch (split[i]) {
-                    case "" -> EMPTY;
-                    case "**" -> UNIVERSAL_WILDCARD;
-                    case "*" -> WILDCARD;
-                    default -> Short.parseShort(split[i], 16);
-                });
+                buildingAddress.put(tiers[i + 2], fromHex(split[i]));
             }
             return Either.left(buildingAddress);
         } catch (NumberFormatException e) {
@@ -149,19 +190,34 @@ public final class AxonAddress extends Object2ShortRBTreeMap<ConnectorLevel> {
         short[] address = getAddress();
         for (int i = 0; i < address.length; i++) {
             short s = address[i];
-            if (s >= 0) {
-                composed.append(Integer.toHexString(s & 0xffff));
-            } else if (s == UNIVERSAL_WILDCARD) {
-                composed.append("**");
-            } else if (s == WILDCARD) {
-                composed.append('*');
-            }
+            composed.append(toHex(s, isWildcards()));
             if (i != address.length - 1) {
                 composed.append('.');
             }
         }
-        composed.append(":").append(getPort());
+        composed.append(":").append(toHex(getPort(), isWildcards()));
         return composed.toString();
+    }
+
+    public void write(@NotNull FriendlyByteBuf buf) {
+        buf.writeBoolean(isWildcards());
+        buf.writeShort(defaultReturnValue());
+        buf.writeVarInt(this.size());
+        for (var entry : this.object2ShortEntrySet()) {
+            buf.writeVarInt(entry.getKey().ordinal());
+            buf.writeShort(entry.getShortValue());
+        }
+    }
+
+    public void read(@NotNull FriendlyByteBuf buf) {
+        setWildcards(buf.readBoolean());
+        defaultReturnValue(buf.readShort());
+        int count = buf.readVarInt();
+        for (int i = 0; i < count; i++) {
+            int ordinal = buf.readVarInt();
+            short value = buf.readShort();
+            this.put(ConnectorLevel.values()[ordinal], value);
+        }
     }
 
     @Override
