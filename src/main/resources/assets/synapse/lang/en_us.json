@@ -2,7 +2,7 @@
   "itemGroup.synapse": "Synapse",
   "synapse.menu.title.basic_connector": "Addressing",
   "synapse.menu.search": "Search",
-  "synapse.menu.address_config": "Device ID"
+  "synapse.menu.address_config": "Device ID",
 
   "item.synapse.biosteel_ingot": "Biosteel Ingot",
   "item.synapse.duned_gold_ingot": "Duned Gold Ingot",
