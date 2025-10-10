@@ -20,7 +20,18 @@ public abstract class SynapseItemRegistry {
     public static final RegistryObject<AxonItem> FLUID_AXON = ITEMS.register("axon.fluid",
             () -> new AxonItem(new Item.Properties(), AxonType.FLUID));
 
+
+    public static final RegistryObject<Item> BIOSTEEL = ITEMS.register("biosteel_ingot",
+            () -> new Item(new Item.Properties()));
+    public static final RegistryObject<Item> DUNED_GOLD = ITEMS.register("duned_gold_ingot",
+            () -> new Item(new Item.Properties()));
+    public static final RegistryObject<Item> ENDER_CRYSTAL = ITEMS.register("ender_crystal",
+            () -> new Item(new Item.Properties()));
+    public static final RegistryObject<Item> NEURAL_THREAD = ITEMS.register("neural_thread",
+            () -> new Item(new Item.Properties()));
     public static final RegistryObject<Item> PIEZOELECTRIC_CRYSTAL = ITEMS.register("piezoelectric_crystal",
+            () -> new Item(new Item.Properties()));
+    public static final RegistryObject<Item> WETWARE_CHIP = ITEMS.register("wetware_chip",
             () -> new Item(new Item.Properties()));
 
     public static void init(IEventBus bus) {
