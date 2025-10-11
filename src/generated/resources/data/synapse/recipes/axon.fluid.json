@@ -1,0 +1,25 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "i": {
+      "item": "minecraft:copper_ingot"
+    },
+    "s": {
+      "item": "synapse:neural_thread"
+    },
+    "t": {
+      "item": "synapse:transfer_powder"
+    }
+  },
+  "pattern": [
+    "sis",
+    "iti",
+    "sis"
+  ],
+  "result": {
+    "count": 3,
+    "item": "synapse:axon.fluid"
+  },
+  "show_notification": true
+}

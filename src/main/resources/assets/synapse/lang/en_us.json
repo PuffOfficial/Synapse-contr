@@ -6,8 +6,10 @@
 
   "item.synapse.biosteel_ingot": "Biosteel Ingot",
   "item.synapse.duned_gold_ingot": "Duned Gold Ingot",
-  "item.synapse.ender_crystal": "Ender Crystal",
+  "item.synapse.transfer_powder": "Transference Powder",
   "item.synapse.neural_thread": "Neural Thread",
+  "item.synapse.wetware_chip": "Primitive Wetware Chip",
   "item.synapse.piezoelectric_crystal": "Piezoelectric Crystal",
-  "item.synapse.wetware_chip": "Primitive Wetware Chip"
+  "item.synapse.magma_crystal": "Magma Crystal",
+  "item.synapse.ender_crystal": "Ender Crystal"
 }
