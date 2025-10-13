@@ -1,9 +1,6 @@
 package com.m_w_k.synapse.common.connect;
 
-import com.m_w_k.synapse.api.connect.AxonAddress;
-import com.m_w_k.synapse.api.connect.AxonTree;
-import com.m_w_k.synapse.api.connect.AxonType;
-import com.m_w_k.synapse.api.connect.ConnectorLevel;
+import com.m_w_k.synapse.api.connect.*;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.UUIDUtil;
@@ -81,8 +78,8 @@ public final class LocalConnectorDevice {
         return cache().getId();
     }
 
-    public boolean setAddressID(short newID) {
-        if (cache() == null) return false;
+    public @NotNull IDSetResult setAddressID(short newID) {
+        if (cache() == null) return IDSetResult.FAIL;
         return cache().setId(newID);
     }
 

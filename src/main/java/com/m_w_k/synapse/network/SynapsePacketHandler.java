@@ -1,7 +1,9 @@
 package com.m_w_k.synapse.network;
 
 import com.m_w_k.synapse.SynapseMod;
+import com.m_w_k.synapse.api.connect.IDSetResult;
 import com.m_w_k.synapse.common.menu.BasicConnectorMenu;
+import com.m_w_k.synapse.common.menu.EndpointMenu;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.fml.DistExecutor;
@@ -33,6 +35,9 @@ public final class SynapsePacketHandler {
         INSTANCE.registerMessage(ids++, ClientboundBasicDeviceDataPacket.class,
                 ClientboundBasicDeviceDataPacket::encode, ClientboundBasicDeviceDataPacket::new,
                 SynapsePacketHandler::handle);
+        INSTANCE.registerMessage(ids++, EndpointRulesetSyncPacket.class,
+                EndpointRulesetSyncPacket::encode, EndpointRulesetSyncPacket::new,
+                SynapsePacketHandler::handle);
     }
 
     private static void handle(ServerboundSetSelectedConnectorPacket packet, Supplier<NetworkEvent.Context> ctx) {
@@ -40,7 +45,7 @@ public final class SynapsePacketHandler {
             ServerPlayer sender = ctx.get().getSender();
             if (sender == null) return;
             if (sender.containerMenu instanceof BasicConnectorMenu menu) {
-                menu.sendToClient(sender, packet.getSlot());
+                menu.sendToClient(sender, packet.getSlot(), IDSetResult.SUCCESS);
             }
         });
         ctx.get().setPacketHandled(true);
@@ -70,6 +75,22 @@ public final class SynapsePacketHandler {
                 // Make sure it's only executed on the physical client
                 DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> SynapseClientPacketHandler.handle(packet, ctx))
         );
+        ctx.get().setPacketHandled(true);
+    }
+
+    private static void handle(EndpointRulesetSyncPacket packet, Supplier<NetworkEvent.Context> ctx) {
+        ctx.get().enqueueWork(() -> {
+            if (packet.getDestination().isClient()) {
+                DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> SynapseClientPacketHandler.handle(packet, ctx));
+            } else {
+                ServerPlayer sender = ctx.get().getSender();
+                if (sender == null) return;
+                if (sender.containerMenu instanceof EndpointMenu menu &&
+                        menu.getRulesetServerside(packet.getDevice()).getType() == packet.getType()) {
+                    packet.syncAction().ifPresent(a -> a.accept(menu.getRulesetServerside(packet.getDevice())));
+                }
+            }
+        });
         ctx.get().setPacketHandled(true);
     }
 }

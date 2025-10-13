@@ -9,10 +9,10 @@ import org.jetbrains.annotations.NotNull;
 
 public class DeviceListWidget extends ObjectSelectionList<DeviceListWidget.DeviceEntry> {
 
-    protected final BasicConnectorScreen parent;
+    protected final AbstractConnectorScreen<?> parent;
     protected final int listWidth;
 
-    public DeviceListWidget(BasicConnectorScreen parent, int left, int listWidth, int top, int bottom) {
+    public DeviceListWidget(AbstractConnectorScreen<?> parent, int left, int listWidth, int top, int bottom) {
         super(parent.getMinecraftInstance(), listWidth, parent.height, top, bottom, parent.getFontRenderer().lineHeight + 8);
         this.x0 = left;
         this.x1 = left + listWidth;

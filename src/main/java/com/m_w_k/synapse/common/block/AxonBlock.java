@@ -114,19 +114,10 @@ public abstract class AxonBlock extends BaseEntityBlock {
     }
 
     protected void openInteractMenu(@NotNull ServerPlayer player, @NotNull Level level, @NotNull BlockState state, @NotNull BlockPos pos, @NotNull IAxonBlockEntity be) {
-        MenuProvider prov = getMenuProvider(state, level, pos);
-        if (prov != null) NetworkHooks.openScreen(player, prov, BasicConnectorMenu.writer(be));
-    }
-
-    @Override
-    public @Nullable MenuProvider getMenuProvider(@NotNull BlockState state, Level level, @NotNull BlockPos pos) {
-        BlockEntity be = level.getBlockEntity(pos);
-        if (be instanceof IAxonBlockEntity a) {
-            return new SimpleMenuProvider(
-                    (containerId, playerInventory, p) -> BasicConnectorMenu.of(containerId, playerInventory, a),
-                    Component.translatable("synapse.menu.title.basic_connector"));
-        }
-        return null;
+        MenuProvider prov = new SimpleMenuProvider(
+                (containerId, playerInventory, p) -> BasicConnectorMenu.of(containerId, playerInventory, be),
+                Component.translatable("synapse.menu.title.basic_connector"));
+        NetworkHooks.openScreen(player, prov, BasicConnectorMenu.writer(be));
     }
 
     protected int determineHitSlot(@NotNull BlockState state, @NotNull Level level,

@@ -181,10 +181,10 @@ public class AxonTree<T> extends SavedData {
     /**
      * Finds connections matching the given address, starting from the given UUID.
      * @param from the UUID to search from
-     * @param seek the address to match
+     * @param seek the address(es) to match
      * @return null if {@code from} is not registered with this tree, otherwise the result of {@link #find(ConnectorData, AxonAddress)}
      */
-    public @Nullable List<Connection<T>> find(@NotNull UUID from, @NotNull AxonAddress seek) {
+    public @Nullable List<Connection<T>> find(@NotNull UUID from, @NotNull Collection<AxonAddress> seek) {
         ConnectorData data = members.get(from);
         if (data == null) return null;
         return find(data, seek);
@@ -193,24 +193,27 @@ public class AxonTree<T> extends SavedData {
     /**
      * Finds connections matching the given address, starting from the given connection data.
      * @param from the connection data to search from
-     * @param seek the address to match
+     * @param seek the address(es) to match
      * @return connections that match the given address
      */
-    public @NotNull List<Connection<T>> find(@NotNull ConnectorData from, @NotNull AxonAddress seek) {
-        if (seek.equals(from.address)) {
-            return List.of(new Connection<>(from.cap, List.of()));
+    public @NotNull List<Connection<T>> find(@NotNull ConnectorData from, @NotNull Collection<AxonAddress> seek) {
+        if (seek.stream().filter(Objects::nonNull).anyMatch(address -> address.equals(from.address))) {
+            return List.of(new Connection<>(from.cap, List.of(), from.address));
         }
         List<Connection<T>> out = new ObjectArrayList<>();
         findRecurseOut(from, seek, out, new ObjectArrayList<>(ConnectorLevel.values().length), null);
         return out;
     }
 
-    protected void findRecurseOut(@NotNull ConnectorData from, @NotNull AxonAddress seek,
+    protected void findRecurseOut(@NotNull ConnectorData from, @NotNull Collection<AxonAddress> seek,
                                   @NotNull List<Connection<T>> out, @NotNull List<AxonConnection> recurseDepth,
                                   @Nullable ConnectorData previous) {
-        if (seek.matchesAtAndAbove(from.address, from.level)) {
+        // filter addresses to only those that match 'from'
+        List<AxonAddress> matchingSeek = seek.stream().filter(Objects::nonNull)
+                .filter(address -> address.matchesAtAndAbove(from.address, from.level)).toList();
+        if (!matchingSeek.isEmpty()) {
             // short circuit inward if 'from' matches the seek
-            findRecurseIn(from, seek, out, new ObjectArrayList<>(recurseDepth), previous);
+            findRecurseIn(from, matchingSeek, out, new ObjectArrayList<>(recurseDepth), previous);
         }
         ConnectorData upstream = from.getUpstream();
         if (upstream != null) {
@@ -220,19 +223,24 @@ public class AxonTree<T> extends SavedData {
         }
     }
 
-    protected void findRecurseIn(@NotNull ConnectorData from, @NotNull AxonAddress seek,
+    protected void findRecurseIn(@NotNull ConnectorData from, @NotNull Collection<AxonAddress> seek,
                                  @NotNull List<Connection<T>> out, @NotNull List<AxonConnection> recurseDepth,
                                  @Nullable ConnectorData visitedDownstream) {
-        if (seek.matches(from.address)) {
-            out.add(new Connection<>(from.getCap(), recurseDepth));
+        if (seek.stream().filter(Objects::nonNull).anyMatch(address -> address.matches(from.address))) {
+            out.add(new Connection<>(from.getCap(), recurseDepth, from.address));
         }
         for (Iterator<ConnectorData> it = from.downstream(); it.hasNext(); ) {
             ConnectorData downstream = it.next();
             if (downstream == visitedDownstream) continue;
-            if (seek.matchesAtAndAbove(downstream.address, downstream.level)) {
+            // discard non-matching seeks so that they don't start matching when they shouldn't.
+            // we only need to check at the downstream level, because everything above that was
+            // matched in findRecurseOut
+            List<AxonAddress> matchingSeek = seek.stream().filter(Objects::nonNull)
+                    .filter(address -> address.matchesAt(downstream.address, downstream.level)).toList();
+            if (!matchingSeek.isEmpty()) {
                 List<AxonConnection> depth = new ObjectArrayList<>(recurseDepth);
                 depth.add(downstream.upstreamConnection);
-                findRecurseIn(downstream, seek, out, depth, visitedDownstream);
+                findRecurseIn(downstream, matchingSeek, out, depth, visitedDownstream);
             }
         }
     }
@@ -265,7 +273,7 @@ public class AxonTree<T> extends SavedData {
         return type;
     }
 
-    public record Connection<T>(@Nullable T capability, List<AxonConnection> connection) {}
+    public record Connection<T>(@Nullable T capability, List<AxonConnection> connection, @NotNull AxonAddress destination) {}
 
     public final class ConnectorData implements INBTSerializable<CompoundTag> {
         public static final UUID NO_UPSTREAM = new UUID(0, 0);
@@ -281,7 +289,7 @@ public class AxonTree<T> extends SavedData {
         private final @NotNull Map<UUID, ConnectorData> downstream;
 
         public ConnectorData(short id, @NotNull ConnectorLevel level) {
-            this.address = new AxonAddress().setWildcards(false);
+            this.address = new AxonAddress();
             this.address.put(level, id);
             this.level = level;
             this.upstream = NO_UPSTREAM;
@@ -298,21 +306,20 @@ public class AxonTree<T> extends SavedData {
         /**
          * Changes the ID of this connector. Updates downstream addresses accordingly.
          * @param id the new id.
-         * @return whether the ID of this connector is now set to {@code id}. Fails if
-         * the new ID would conflict with another connector under our upstream.
+         * @return the result of this ID set operation
          */
-        public boolean setId(@Range(from = 0, to = Short.MAX_VALUE) short id) {
-            if (id == AxonAddress.EMPTY) return false;
-            if (this.getId() == id) return true;
+        public @NotNull IDSetResult setId(@Range(from = 0, to = Short.MAX_VALUE) short id) {
+            if (AxonAddress.isSpecialCharacter(id)) return IDSetResult.FAIL_SPECIAL_CODE;
+            if (this.getId() == id) return IDSetResult.SUCCESS_UNCHANGED;
             if (hasUpstream()) {
                 for (@NotNull Iterator<ConnectorData> it = getUpstream().downstream(); it.hasNext(); ) {
                     ConnectorData conflictCandidate = it.next();
-                    if (id == conflictCandidate.getId()) return false;
+                    if (id == conflictCandidate.getId()) return IDSetResult.FAIL_CHILD_CONFLICT;
                 }
             }
             updateCascade(level, id);
             setDirty();
-            return true;
+            return IDSetResult.SUCCESS;
         }
 
         /**
