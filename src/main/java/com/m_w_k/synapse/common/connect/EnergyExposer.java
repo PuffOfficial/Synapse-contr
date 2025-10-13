@@ -1,15 +1,19 @@
 package com.m_w_k.synapse.common.connect;
 
 import com.m_w_k.synapse.api.block.IFacedAxonBlockEntity;
+import com.m_w_k.synapse.api.block.ruleset.TransferRuleset;
 import com.m_w_k.synapse.api.connect.AxonTree;
 import com.m_w_k.synapse.api.connect.AxonType;
 import net.minecraft.core.Direction;
+import net.minecraft.nbt.ByteTag;
+import net.minecraft.nbt.Tag;
 import net.minecraftforge.energy.IEnergyStorage;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
 
-public class EnergyExposer extends AbstractExposer<IEnergyStorage, EnergyExposer> implements IEnergyStorage {
+public class EnergyExposer extends AbstractExposer<IEnergyStorage, EnergyExposer, Void> implements IEnergyStorage {
 
     public EnergyExposer(@NotNull IFacedAxonBlockEntity owner) {
         super(owner);
@@ -21,7 +25,21 @@ public class EnergyExposer extends AbstractExposer<IEnergyStorage, EnergyExposer
 
     @Override
     protected EnergyExposer constructChild(Direction dir) {
+        if (dir == null) return this;
         return new EnergyExposer(dir, this);
+    }
+
+    @Override
+    protected @NotNull Tag save() {
+        return ByteTag.valueOf((byte) 0);
+    }
+
+    @Override
+    protected void load(@NotNull Tag nbt) {}
+
+    @Override
+    public TransferRuleset.@Nullable QueryableRuleset<Void> getRuleset() {
+        return null;
     }
 
     @Override

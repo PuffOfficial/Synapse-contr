@@ -13,7 +13,6 @@ public enum AxonType implements StringRepresentable, IExtensibleEnum {
         long consumed = d.getLong("Consumed");
         if (t > 0) {
             capacity += (int) (consumed * 0.1f);
-            d.remove("Consumed");
             consumed = 0;
             capacity = (int) (capacity * Math.pow(0.95f, t));
             if (!sim) d.putLong("Capacity", capacity);
@@ -29,16 +28,16 @@ public enum AxonType implements StringRepresentable, IExtensibleEnum {
         if (t > 0) {
             int refreshInterval = 10;
             t = t + d.getInt("TimeSum");
-            d.putInt("TimeSum", t % refreshInterval);
+            if (!sim) d.putInt("TimeSum", t % refreshInterval);
             t = t / refreshInterval;
             if (t > 0) {
                 capacity += Math.min(baseStackCap * 64, consumed);
-                d.remove("Consumed");
+                if (!sim) d.remove("Consumed");
                 consumed = 0;
                 if (t > 1) {
                     capacity = Math.max(baseStackCap * 64, capacity - baseStackCap * 64L * (t - 1));
-                    if (!sim) d.putLong("Capacity", capacity);
                 }
+                if (!sim) d.putLong("Capacity", capacity);
             }
         }
         if (!sim) d.putLong("Consumed", Math.min(r + consumed, capacity));
@@ -51,16 +50,16 @@ public enum AxonType implements StringRepresentable, IExtensibleEnum {
         if (t > 0) {
             int refreshInterval = 10;
             t = t + d.getInt("TimeSum");
-            d.putInt("TimeSum", t % refreshInterval);
+            if (!sim) d.putInt("TimeSum", t % refreshInterval);
             t = t / refreshInterval;
             if (t > 0) {
                 capacity += Math.min(consumed, baseCap);
-                d.remove("Consumed");
+                if (!sim) d.remove("Consumed");
                 consumed = 0;
                 if (t > 1) {
                     capacity = Math.max(baseCap, capacity - baseCap * (t - 1));
-                    if (!sim) d.putLong("Capacity", capacity);
                 }
+                if (!sim) d.putLong("Capacity", capacity);
             }
         }
         if (!sim) d.putLong("Consumed", Math.min(r + consumed, capacity));

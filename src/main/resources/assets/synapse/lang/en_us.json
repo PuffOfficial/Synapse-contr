@@ -1,8 +1,27 @@
 {
   "itemGroup.synapse": "Synapse",
-  "synapse.menu.title.basic_connector": "Addressing",
+
+  "synapse.menu.title.basic_connector": "Connector",
+  "synapse.menu.title.endpoint": "Endpoint",
   "synapse.menu.search": "Search",
   "synapse.menu.address_config": "Device ID",
+  "synapse.menu.id.fail": "Unknown Failure",
+  "synapse.menu.id.fail_code": "Invalid ID",
+  "synapse.menu.id.fail_conflict": "ID is taken",
+
+  "synapse.menu.ruleset": "Ruleset",
+  "synapse.menu.button.ruleset.left": "Previous Rule",
+  "synapse.menu.button.ruleset.swap_left": "Shift Left",
+  "synapse.menu.button.ruleset.right": "Next Rule",
+  "synapse.menu.button.ruleset.swap_right": "Shift Right",
+  "synapse.menu.button.ruleset.delete": "Remove Rule",
+  "synapse.menu.button.ruleset.add": "New Rule",
+  "synapse.menu.button.ruleset.nbt": "Respect NBT",
+  "synapse.menu.button.ruleset.whitelist": "Whitelist/Blacklist",
+  "synapse.menu.button.ruleset.incoming": "Filters Incoming",
+  "synapse.menu.button.ruleset.outgoing": "Filters Outgoing",
+  "synapse.menu.ruleset.address_config": "Rule Address",
+  "synapse.menu.button.ruleset.item": "Filter Item",
 
   "item.synapse.biosteel_ingot": "Biosteel Ingot",
   "item.synapse.duned_gold_ingot": "Duned Gold Ingot",

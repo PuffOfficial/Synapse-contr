@@ -2,18 +2,24 @@ package com.m_w_k.synapse.common.block.entity;
 
 import com.m_w_k.synapse.api.block.AxonDeviceDefinitions;
 import com.m_w_k.synapse.api.block.IFacedAxonBlockEntity;
+import com.m_w_k.synapse.api.block.ruleset.TransferRuleset;
 import com.m_w_k.synapse.api.connect.AxonType;
 import com.m_w_k.synapse.api.connect.ConnectorLevel;
 import com.m_w_k.synapse.common.block.EndpointBlock;
+import com.m_w_k.synapse.common.connect.IEndpointCapability;
 import com.m_w_k.synapse.common.connect.LocalAxonConnection;
 import com.m_w_k.synapse.common.connect.LocalConnectorDevice;
 import com.m_w_k.synapse.registry.SynapseBlockEntityRegistry;
+import it.unimi.dsi.fastutil.Pair;
+import it.unimi.dsi.fastutil.objects.Reference2ObjectOpenHashMap;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.common.capabilities.Capability;
+import net.minecraftforge.common.util.LazyOptional;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -23,11 +29,33 @@ import org.jetbrains.annotations.Nullable;
  */
 public class EndpointBlockEntity extends AxonBlockEntity implements IFacedAxonBlockEntity {
 
+    protected Reference2ObjectOpenHashMap<Capability<?>, LazyOptional<IEndpointCapability>> capabilites = new Reference2ObjectOpenHashMap<>();
+
     public EndpointBlockEntity(BlockPos pos, BlockState state) {
         super(SynapseBlockEntityRegistry.ENDPOINT_BLOCK.get(), pos, state);
         for (var pair : AxonDeviceDefinitions.ENDPOINTS_INV) {
             devices.add(new LocalConnectorDevice(pair.key(), ConnectorLevel.ENDPOINT));
         }
+        AxonDeviceDefinitions.ENDPOINT_CAPABILITIES.forEach((t, f) -> capabilites.put(t.getCapability(), LazyOptional.of(() -> f.apply(this))));
+    }
+
+    public @Nullable TransferRuleset rulesetForSlot(int slot) {
+        Pair<AxonType, Direction> desc = AxonDeviceDefinitions.ENDPOINTS_INV.get(slot);
+        LazyOptional<IEndpointCapability> fetch = capabilites.get(desc.left().getCapability());
+        if (fetch == null || !fetch.isPresent()) return null;
+        // else will never occur since fetch is present
+        return fetch.orElse(null).child(desc.right()).getRuleset();
+    }
+
+    @Override
+    public @NotNull <T> LazyOptional<T> getCapability(@NotNull Capability<T> cap, @Nullable Direction side) {
+        if (activeOnSide(cap, side)) {
+            LazyOptional<IEndpointCapability> fetch = capabilites.get(cap);
+            if (fetch != null) {
+                return fetch.lazyMap(c -> c.child(side)).cast();
+            }
+        }
+        return super.getCapability(cap, side);
     }
 
     @Override
@@ -69,7 +97,26 @@ public class EndpointBlockEntity extends AxonBlockEntity implements IFacedAxonBl
         for (AxonType type : AxonType.values()) {
             if (activeOnSide(type.getCapability(), side)) updateDevice(type, type.getCapability(), side);
         }
+    }
 
+    @Override
+    public void load(@NotNull CompoundTag tag) {
+        super.load(tag);
+        capabilites.forEach((cap, optional) -> {
+            if (tag.contains(cap.getName())) {
+                optional.orElse(null).deserializeNBT(tag.getCompound(cap.getName()));
+            }
+        });
+    }
+
+    @Override
+    protected void saveAdditional(@NotNull CompoundTag tag) {
+        super.saveAdditional(tag);
+        capabilites.forEach((cap, optional) -> {
+            if (optional.resolved != null) {
+                tag.put(cap.getName(), optional.orElse(null).serializeNBT());
+            }
+        });
     }
 
     @Override

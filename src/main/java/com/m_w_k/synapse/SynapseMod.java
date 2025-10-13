@@ -1,8 +1,10 @@
 package com.m_w_k.synapse;
 
 import com.m_w_k.synapse.client.gui.BasicConnectorScreen;
+import com.m_w_k.synapse.client.gui.EndpointScreen;
 import com.m_w_k.synapse.client.renderer.TestAxonRenderer;
 import com.m_w_k.synapse.data.SynapseAdvancementGen;
+import com.m_w_k.synapse.common.menu.EndpointMenu;
 import com.m_w_k.synapse.data.SynapseLootTableGen;
 import com.m_w_k.synapse.data.SynapseRecipeProvider;
 import com.m_w_k.synapse.network.SynapsePacketHandler;
@@ -13,6 +15,7 @@ import net.minecraft.data.DataGenerator;
 import net.minecraft.data.DataProvider;
 import net.minecraft.data.PackOutput;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.inventory.MenuType;
 import net.minecraftforge.client.event.EntityRenderersEvent;
 import net.minecraftforge.common.data.ExistingFileHelper;
 import net.minecraftforge.data.event.GatherDataEvent;
@@ -62,7 +65,10 @@ public class SynapseMod {
 
     private void clientSetup(FMLClientSetupEvent event) {
         event.enqueueWork(
-                () -> MenuScreens.register(SynapseMenuRegistry.BASIC_CONNECTOR.get(), BasicConnectorScreen::new)
+                () -> {
+                    MenuScreens.register(SynapseMenuRegistry.BASIC_CONNECTOR.get(), BasicConnectorScreen::new);
+                    MenuScreens.register(SynapseMenuRegistry.ENDPOINT.get(), EndpointScreen::new);
+                }
         );
     }
 

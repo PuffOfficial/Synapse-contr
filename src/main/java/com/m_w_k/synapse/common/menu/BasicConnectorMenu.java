@@ -1,6 +1,8 @@
 package com.m_w_k.synapse.common.menu;
 
 import com.m_w_k.synapse.api.connect.AxonAddress;
+import com.m_w_k.synapse.api.connect.ConnectorLevel;
+import com.m_w_k.synapse.api.connect.IDSetResult;
 import com.m_w_k.synapse.common.block.AxonBlock;
 import com.m_w_k.synapse.api.block.IAxonBlockEntity;
 import com.m_w_k.synapse.common.connect.LocalConnectorDevice;
@@ -15,11 +17,13 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ContainerLevelAccess;
+import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.network.PacketDistributor;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -51,10 +55,19 @@ public class BasicConnectorMenu extends AbstractContainerMenu {
     protected short selectedID;
     @OnlyIn(Dist.CLIENT)
     protected AxonAddress selectedAddress;
+    @OnlyIn(Dist.CLIENT)
+    protected ConnectorLevel selectedLevel;
+    @OnlyIn(Dist.CLIENT)
+    protected IDSetResult setResult;
 
     public BasicConnectorMenu(int containerID, Inventory playerInv, ContainerLevelAccess access, IntFunction<String> deviceNames,
                               int deviceCount) {
-        super(SynapseMenuRegistry.BASIC_CONNECTOR.get(), containerID);
+        this(SynapseMenuRegistry.BASIC_CONNECTOR.get(), containerID, playerInv, access, deviceNames, deviceCount);
+    }
+
+    protected BasicConnectorMenu(MenuType<?> type, int containerID, Inventory playerInv, ContainerLevelAccess access, IntFunction<String> deviceNames,
+                              int deviceCount) {
+        super(type, containerID);
         this.deviceCount = deviceCount;
         this.deviceNames = deviceNames;
 
@@ -161,19 +174,19 @@ public class BasicConnectorMenu extends AbstractContainerMenu {
         return set;
     }
 
-    public void sendToClient(ServerPlayer player, int device) {
+    public void sendToClient(ServerPlayer player, int device, IDSetResult result) {
         if (be == null || be.getLevel() == null) return;
         BitSet active = evaluateActiveness(be);
         ClientboundBasicDeviceDataPacket packet = active.get(device) ?
-                new ClientboundBasicDeviceDataPacket(active, device, be.getBySlot(device).ensureRegistered(be.getLevel()))
-                : new ClientboundBasicDeviceDataPacket(active, device, null, (short) 0);
+                new ClientboundBasicDeviceDataPacket(active, device, be.getBySlot(device).ensureRegistered(be.getLevel()), result)
+                : new ClientboundBasicDeviceDataPacket(active, device, null, ConnectorLevel.RELAY, result);
         SynapsePacketHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> player), packet);
     }
 
     public void updateID(ServerPlayer player, int device, short id) {
         if (be == null) return;
-        be.getBySlot(device).setAddressID(id);
-        sendToClient(player, device);
+        IDSetResult result = be.getBySlot(device).setAddressID(id);
+        sendToClient(player, device, result);
     }
 
     @OnlyIn(Dist.CLIENT)
@@ -219,6 +232,26 @@ public class BasicConnectorMenu extends AbstractContainerMenu {
     @OnlyIn(Dist.CLIENT)
     public AxonAddress getSelectedAddress() {
         return selectedAddress;
+    }
+
+    @OnlyIn(Dist.CLIENT)
+    public void setSelectedLevel(ConnectorLevel selectedLevel) {
+        this.selectedLevel = selectedLevel;
+    }
+
+    @OnlyIn(Dist.CLIENT)
+    public ConnectorLevel getSelectedLevel() {
+        return selectedLevel;
+    }
+
+    @OnlyIn(Dist.CLIENT)
+    public void setSetResult(IDSetResult setResult) {
+        this.setResult = setResult;
+    }
+
+    @OnlyIn(Dist.CLIENT)
+    public IDSetResult getSetResult() {
+        return setResult;
     }
 
     @OnlyIn(Dist.CLIENT)

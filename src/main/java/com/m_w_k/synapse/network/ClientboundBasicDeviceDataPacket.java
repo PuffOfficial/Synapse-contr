@@ -3,6 +3,7 @@ package com.m_w_k.synapse.network;
 import com.m_w_k.synapse.api.connect.AxonAddress;
 import com.m_w_k.synapse.api.connect.AxonType;
 import com.m_w_k.synapse.api.connect.ConnectorLevel;
+import com.m_w_k.synapse.api.connect.IDSetResult;
 import com.m_w_k.synapse.common.connect.LocalConnectorDevice;
 import it.unimi.dsi.fastutil.objects.Reference2ObjectOpenHashMap;
 import net.minecraft.network.FriendlyByteBuf;
@@ -13,17 +14,20 @@ public class ClientboundBasicDeviceDataPacket extends ClientboundDeviceSyncPacke
 
     protected final int slot;
     protected final AxonAddress address;
-    protected final short id;
+    protected final ConnectorLevel level;
 
-    public ClientboundBasicDeviceDataPacket(BitSet activeDevices, int slot, LocalConnectorDevice device) {
-        this(activeDevices, slot, device.getAddress(), device.getAddressID());
+    protected final IDSetResult setResult;
+
+    public ClientboundBasicDeviceDataPacket(BitSet activeDevices, int slot, LocalConnectorDevice device, IDSetResult setResult) {
+        this(activeDevices, slot, device.getAddress(), device.level(), setResult);
     }
 
-    public ClientboundBasicDeviceDataPacket(BitSet activeDevices, int slot, AxonAddress address, short id) {
+    public ClientboundBasicDeviceDataPacket(BitSet activeDevices, int slot, AxonAddress address, ConnectorLevel level, IDSetResult setResult) {
         super(activeDevices);
         this.slot = slot;
         this.address = address;
-        this.id = id;
+        this.level = level;
+        this.setResult = setResult;
     }
 
     public ClientboundBasicDeviceDataPacket(FriendlyByteBuf buf) {
@@ -32,11 +36,12 @@ public class ClientboundBasicDeviceDataPacket extends ClientboundDeviceSyncPacke
         if (buf.readBoolean()) {
             address = new AxonAddress();
             address.read(buf);
-            id = buf.readShort();
+            level = buf.readEnum(ConnectorLevel.class);
         } else {
             address = null;
-            id = 0;
+            level = ConnectorLevel.RELAY;
         }
+        setResult = buf.readEnum(IDSetResult.class);
     }
 
     public void encode(FriendlyByteBuf buf) {
@@ -45,8 +50,9 @@ public class ClientboundBasicDeviceDataPacket extends ClientboundDeviceSyncPacke
         buf.writeBoolean(address != null);
         if (address != null) {
             address.write(buf);
-            buf.writeShort(id);
+            buf.writeEnum(level);
         }
+        buf.writeEnum(setResult);
     }
 
     public int getSlot() {
@@ -57,7 +63,15 @@ public class ClientboundBasicDeviceDataPacket extends ClientboundDeviceSyncPacke
         return address;
     }
 
+    public ConnectorLevel getLevel() {
+        return level;
+    }
+
     public short getId() {
-        return id;
+        return address.getShort(level);
+    }
+
+    public IDSetResult getSetResult() {
+        return setResult;
     }
 }

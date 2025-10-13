@@ -34,4 +34,6 @@ public interface IAxonBlockEntity extends ICapabilityProvider, IForgeBlockEntity
     default boolean allowsDownstream(int slot) {
         return slotIsActive(slot);
     }
+
+    void setChanged();
 }

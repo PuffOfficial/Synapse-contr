@@ -4,14 +4,21 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.m_w_k.synapse.SynapseUtil;
 import com.m_w_k.synapse.api.block.AxonDeviceDefinitions;
+import com.m_w_k.synapse.api.block.IAxonBlockEntity;
 import com.m_w_k.synapse.common.block.entity.EndpointBlockEntity;
 import com.m_w_k.synapse.common.item.AxonItem;
+import com.m_w_k.synapse.common.menu.BasicConnectorMenu;
+import com.m_w_k.synapse.common.menu.EndpointMenu;
 import com.m_w_k.synapse.registry.SynapseBlockEntityRegistry;
 import it.unimi.dsi.fastutil.Pair;
 import net.minecraft.Util;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.MenuProvider;
+import net.minecraft.world.SimpleMenuProvider;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
@@ -30,6 +37,7 @@ import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.material.Fluids;
 import net.minecraft.world.level.pathfinder.PathComputationType;
 import net.minecraft.world.phys.BlockHitResult;
+import net.minecraftforge.network.NetworkHooks;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
@@ -58,6 +66,14 @@ public class EndpointBlock extends AxonBlock implements SimpleWaterloggedBlock {
             def = def.setValue(prop, Boolean.FALSE);
         }
         this.registerDefaultState(def);
+    }
+
+    @Override
+    protected void openInteractMenu(@NotNull ServerPlayer player, @NotNull Level level, @NotNull BlockState state, @NotNull BlockPos pos, @NotNull IAxonBlockEntity be) {
+        MenuProvider prov = new SimpleMenuProvider(
+                (containerId, playerInventory, p) -> EndpointMenu.of(containerId, playerInventory, be),
+                Component.translatable("synapse.menu.title.endpoint"));
+        NetworkHooks.openScreen(player, prov, EndpointMenu.writer(be));
     }
 
     @Override

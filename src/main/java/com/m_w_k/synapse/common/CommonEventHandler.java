@@ -24,46 +24,4 @@ import org.jetbrains.annotations.Nullable;
 
 @Mod.EventBusSubscriber(modid = SynapseMod.MODID)
 public final class CommonEventHandler {
-
-    @SubscribeEvent
-    public static void attachEndpointCaps(AttachCapabilitiesEvent<BlockEntity> event) {
-        if (event.getObject() instanceof EndpointBlockEntity endpoint) {
-            event.addCapability(SynapseMod.resLoc("endpoint_energy"), new ICapabilityProvider() {
-                private final LazyOptional<EnergyExposer> optional = LazyOptional.of(() -> new EnergyExposer(endpoint));
-
-                @Override
-                public @NotNull <T> LazyOptional<T> getCapability(@NotNull Capability<T> cap, @Nullable Direction side) {
-                    if (cap == ForgeCapabilities.ENERGY &&
-                            endpoint.activeOnSide(ForgeCapabilities.ENERGY, side)) {
-                        return AbstractExposer.sided(side, optional);
-                    }
-                    return LazyOptional.empty();
-                }
-            });
-            event.addCapability(SynapseMod.resLoc("endpoint_fluid"), new ICapabilityProvider() {
-                private final LazyOptional<FluidExposer> optional = LazyOptional.of(() -> new FluidExposer(endpoint));
-
-                @Override
-                public @NotNull <T> LazyOptional<T> getCapability(@NotNull Capability<T> cap, @Nullable Direction side) {
-                    if (cap == ForgeCapabilities.FLUID_HANDLER &&
-                            endpoint.activeOnSide(ForgeCapabilities.FLUID_HANDLER, side)) {
-                        return AbstractExposer.sided(side, optional);
-                    }
-                    return LazyOptional.empty();
-                }
-            });
-            event.addCapability(SynapseMod.resLoc("endpoint_item"), new ICapabilityProvider() {
-                private final LazyOptional<ItemExposer> optional = LazyOptional.of(() -> new ItemExposer(endpoint));
-
-                @Override
-                public @NotNull <T> LazyOptional<T> getCapability(@NotNull Capability<T> cap, @Nullable Direction side) {
-                    if (cap == ForgeCapabilities.ITEM_HANDLER &&
-                            endpoint.activeOnSide(ForgeCapabilities.ITEM_HANDLER, side)) {
-                        return AbstractExposer.sided(side, optional);
-                    }
-                    return LazyOptional.empty();
-                }
-            });
-        }
-    }
 }
