@@ -15,7 +15,7 @@ import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.RegistryObject;
 
-public abstract class SynapseBlockRegistry {
+public final class SynapseBlockRegistry {
 
     public static final DeferredRegister<Block> BLOCKS = DeferredRegister.create(Registries.BLOCK, SynapseMod.MODID);
 

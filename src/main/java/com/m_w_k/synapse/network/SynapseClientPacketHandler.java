@@ -10,7 +10,7 @@ import net.minecraftforge.network.NetworkEvent;
 
 import java.util.function.Supplier;
 
-public class SynapseClientPacketHandler {
+public final class SynapseClientPacketHandler {
 
     static void handle(ClientboundDeviceSyncPacket packet, Supplier<NetworkEvent.Context> ctx) {
         if (Minecraft.getInstance().player == null) return;

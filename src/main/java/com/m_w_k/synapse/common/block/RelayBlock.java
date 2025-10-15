@@ -1,10 +1,17 @@
 package com.m_w_k.synapse.common.block;
 
+import com.m_w_k.synapse.api.block.AxonDeviceDefinitions;
+import com.m_w_k.synapse.api.block.IAxonBlockEntity;
 import com.m_w_k.synapse.common.block.entity.AxonBlockEntity;
 import com.m_w_k.synapse.common.block.entity.RelayBlockEntity;
+import com.m_w_k.synapse.common.item.AxonItem;
 import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.SimpleWaterloggedBlock;
@@ -16,6 +23,7 @@ import net.minecraft.world.level.block.state.properties.IntegerProperty;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.material.Fluids;
 import net.minecraft.world.level.pathfinder.PathComputationType;
+import net.minecraft.world.phys.BlockHitResult;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
@@ -29,6 +37,20 @@ public class RelayBlock extends AxonBlock implements SimpleWaterloggedBlock {
         super(p_49795_);
         this.registerDefaultState(this.stateDefinition.any().setValue(RELAYS, 1)
                 .setValue(WATERLOGGED, Boolean.FALSE));
+    }
+
+    @Override
+    protected boolean hasInteractMenu() {
+        return false;
+    }
+
+    @Override
+    protected int determineHitSlot(@NotNull BlockState state, @NotNull Level level, @NotNull BlockPos pos, @NotNull Player player, @NotNull InteractionHand hand, @NotNull BlockHitResult hit) {
+        // TODO
+        if (player.getItemInHand(hand).getItem() instanceof AxonItem iAxon) {
+            return AxonDeviceDefinitions.relay(iAxon.getType(), 0);
+        }
+        return 0;
     }
 
     @Nullable

@@ -1,20 +1,22 @@
 package com.m_w_k.synapse.api.connect;
 
 import com.mojang.serialization.Codec;
-import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectRBTreeSet;
 import net.minecraft.util.StringRepresentable;
 import net.minecraftforge.common.IExtensibleEnum;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Comparator;
-import java.util.List;
+import java.util.Map;
 
 public enum ConnectorLevel implements StringRepresentable, IExtensibleEnum {
-    ENDPOINT(0), RELAY(Double.NEGATIVE_INFINITY),
+    ENDPOINT(0), RELAY(Double.NEGATIVE_INFINITY), CORRUPTED(Double.NaN),
     DISTRIBUTOR_1(1), DISTRIBUTOR_2(2), DISTRIBUTOR_3(3);
 
     public static final Codec<ConnectorLevel> CODEC = IExtensibleEnum.createCodecForExtensibleEnum(ConnectorLevel::values, ConnectorLevel::valueOf);
+
+    public static final int NON_ADDRESS_COUNT = 3;
 
     public static final ObjectRBTreeSet<ConnectorLevel> ADDRESS_SPACE = new ObjectRBTreeSet<>(Comparator.comparingDouble(ConnectorLevel::getPrio).reversed());
 
@@ -65,4 +67,13 @@ public enum ConnectorLevel implements StringRepresentable, IExtensibleEnum {
         return ConnectionType.UNKNOWN;
     }
 
+    public interface Provider {
+
+        ConnectorLevel getLevel();
+
+        @Nullable
+        default Map<DeviceDataKey<?>, Object> getData() {
+            return null;
+        }
+    }
 }

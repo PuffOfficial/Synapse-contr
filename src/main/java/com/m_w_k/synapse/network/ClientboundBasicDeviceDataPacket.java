@@ -1,11 +1,9 @@
 package com.m_w_k.synapse.network;
 
 import com.m_w_k.synapse.api.connect.AxonAddress;
-import com.m_w_k.synapse.api.connect.AxonType;
 import com.m_w_k.synapse.api.connect.ConnectorLevel;
 import com.m_w_k.synapse.api.connect.IDSetResult;
 import com.m_w_k.synapse.common.connect.LocalConnectorDevice;
-import it.unimi.dsi.fastutil.objects.Reference2ObjectOpenHashMap;
 import net.minecraft.network.FriendlyByteBuf;
 
 import java.util.BitSet;
@@ -19,7 +17,7 @@ public class ClientboundBasicDeviceDataPacket extends ClientboundDeviceSyncPacke
     protected final IDSetResult setResult;
 
     public ClientboundBasicDeviceDataPacket(BitSet activeDevices, int slot, LocalConnectorDevice device, IDSetResult setResult) {
-        this(activeDevices, slot, device.getAddress(), device.level(), setResult);
+        this(activeDevices, slot, device.getAddress(), device.getLevel(), setResult);
     }
 
     public ClientboundBasicDeviceDataPacket(BitSet activeDevices, int slot, AxonAddress address, ConnectorLevel level, IDSetResult setResult) {
@@ -39,7 +37,7 @@ public class ClientboundBasicDeviceDataPacket extends ClientboundDeviceSyncPacke
             level = buf.readEnum(ConnectorLevel.class);
         } else {
             address = null;
-            level = ConnectorLevel.RELAY;
+            level = ConnectorLevel.CORRUPTED;
         }
         setResult = buf.readEnum(IDSetResult.class);
     }

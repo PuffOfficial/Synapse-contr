@@ -1,10 +1,7 @@
 package com.m_w_k.synapse.common.block.entity;
 
-import com.m_w_k.synapse.api.block.AxonDeviceDefinitions;
 import com.m_w_k.synapse.api.block.IAxonBlockEntity;
 import com.m_w_k.synapse.api.connect.AxonTree;
-import com.m_w_k.synapse.api.connect.AxonType;
-import com.m_w_k.synapse.api.connect.ConnectorLevel;
 import com.m_w_k.synapse.common.connect.LocalConnectorDevice;
 import com.m_w_k.synapse.common.connect.LocalAxonConnection;
 import com.mojang.serialization.Codec;
@@ -58,14 +55,13 @@ public abstract class AxonBlockEntity extends BlockEntity implements IAxonBlockE
     }
 
     public @Nullable LocalAxonConnection setUpstream(@NotNull LocalAxonConnection connection, boolean dropOld) {
-
         LocalAxonConnection prev = getBySlot(connection.getSourceSlot()).setUpstream(connection);
         if (getLevel() != null) {
             BlockEntity be = getLevel().getBlockEntity(connection.getTargetPos());
-            if (be instanceof AxonBlockEntity a) a.addDownstream(getBlockPos());
+            if (be instanceof IAxonBlockEntity a) a.addDownstream(getBlockPos());
             if (prev != null) {
                 be = getLevel().getBlockEntity(prev.getTargetPos());
-                if (be instanceof AxonBlockEntity a) a.removeDownstream(getBlockPos());
+                if (be instanceof IAxonBlockEntity a) a.removeDownstream(getBlockPos());
                 if (dropOld) {
                     Block.popResource(getLevel(), getBlockPos(), prev.getItem().getItemWhenRemoved(prev));
                 }
@@ -79,7 +75,7 @@ public abstract class AxonBlockEntity extends BlockEntity implements IAxonBlockE
         LocalAxonConnection prev = getBySlot(slot).setUpstream(null);
         if (prev != null && getLevel() != null) {
             BlockEntity be = getLevel().getBlockEntity(prev.getTargetPos());
-            if (be instanceof AxonBlockEntity a) a.removeDownstream(getBlockPos());
+            if (be instanceof IAxonBlockEntity a) a.removeDownstream(getBlockPos());
             if (drop) {
                 Block.popResource(getLevel(), getBlockPos(), prev.getItem().getItemWhenRemoved(prev));
             }
@@ -92,6 +88,7 @@ public abstract class AxonBlockEntity extends BlockEntity implements IAxonBlockE
         return downstream;
     }
 
+    @Override
     public boolean removeDownstream(@NotNull BlockPos pos) {
         boolean changed = downstream.remove(pos);
         if (changed) {
@@ -100,6 +97,7 @@ public abstract class AxonBlockEntity extends BlockEntity implements IAxonBlockE
         return changed;
     }
 
+    @Override
     public boolean addDownstream(@NotNull BlockPos pos) {
         boolean changed = downstream.add(pos);
         if (changed) {
@@ -156,7 +154,7 @@ public abstract class AxonBlockEntity extends BlockEntity implements IAxonBlockE
         if (!(getLevel() instanceof ServerLevel)) return;
         for (BlockPos pos : getDownstream()) {
             BlockEntity be = getLevel().getBlockEntity(pos);
-            if (be instanceof AxonBlockEntity abe) {
+            if (be instanceof IAxonBlockEntity abe) {
                 abe.onUpstreamRemoved();
             }
         }
@@ -166,13 +164,14 @@ public abstract class AxonBlockEntity extends BlockEntity implements IAxonBlockE
             LocalAxonConnection connection = d1.upstream();
             if (connection == null) return;
             BlockEntity be = getLevel().getBlockEntity(connection.getTargetPos());
-            if (be instanceof AxonBlockEntity a) {
+            if (be instanceof IAxonBlockEntity a) {
                 a.removeDownstream(getBlockPos());
             }
             Block.popResource(getLevel(), getBlockPos(), connection.getItem().getItemWhenRemoved(connection));
         });
     }
 
+    @Override
     public void onUpstreamRemoved() {
         if (getLevel() == null) return;
         devices.forEach(d -> {
