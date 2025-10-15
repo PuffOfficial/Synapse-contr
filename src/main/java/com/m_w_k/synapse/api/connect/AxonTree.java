@@ -1,6 +1,6 @@
 package com.m_w_k.synapse.api.connect;
 
-import com.m_w_k.synapse.common.connect.AxonConnection;
+import com.m_w_k.synapse.SynapseUtil;
 import it.unimi.dsi.fastutil.objects.*;
 import it.unimi.dsi.fastutil.shorts.ShortOpenHashSet;
 import it.unimi.dsi.fastutil.shorts.ShortSet;
@@ -16,11 +16,12 @@ import org.jetbrains.annotations.Range;
 import org.jetbrains.annotations.UnmodifiableView;
 
 import java.util.*;
+import java.util.function.Consumer;
 
 public class AxonTree<T> extends SavedData {
 
     private final @NotNull AxonType type;
-    private final @NotNull Map<UUID, ConnectorData> members;
+    private final @NotNull Map<UUID, ConnectorDevice> members;
 
     /**
      * Load the particular axon tree for the type.
@@ -54,10 +55,10 @@ public class AxonTree<T> extends SavedData {
      * @param cap the capability to register.
      * @return the connection data now registered with the provided UUID
      */
-    public @NotNull ConnectorData register(@NotNull UUID uuid, short identifier, @NotNull ConnectorLevel level, @Nullable T cap) {
-        ConnectorData data = members.computeIfAbsent(uuid, k -> {
+    public @NotNull ConnectorDevice register(@NotNull UUID uuid, short identifier, @NotNull ConnectorLevel level, @Nullable T cap) {
+        ConnectorDevice data = members.computeIfAbsent(uuid, k -> {
             setDirty();
-            return new ConnectorData(identifier, level);
+            return new ConnectorDevice(identifier, level);
         });
         if (cap != null) data.setCap(cap);
         return data;
@@ -68,10 +69,10 @@ public class AxonTree<T> extends SavedData {
      * @param uuid the uuid to remove
      */
     public void retire(@NotNull UUID uuid) {
-        ConnectorData data = members.remove(uuid);
+        ConnectorDevice data = members.remove(uuid);
         if (data == null) return;
         if (data.getUpstream() != null) data.getUpstream().removeDownstream(uuid);
-        data.downstream().forEachRemaining(ConnectorData::removeUpstream);
+        data.downstream().forEachRemaining(d -> d.removeUpstream(data));
     }
 
     /**
@@ -79,7 +80,7 @@ public class AxonTree<T> extends SavedData {
      * @param uuid the UUID
      * @return the associated data
      */
-    public @Nullable ConnectorData get(@NotNull UUID uuid) {
+    public @Nullable ConnectorDevice get(@NotNull UUID uuid) {
         return members.get(uuid);
     }
 
@@ -92,8 +93,8 @@ public class AxonTree<T> extends SavedData {
      * @return the type of connection from a to b. Null if not connected,
      * {@link ConnectionType#UNKNOWN} if either is not registered to this tree.
      */
-    public @Nullable ConnectionType isConnected(@NotNull UUID aIdentifier, @Nullable ConnectorData aData,
-                                                @NotNull UUID bIdentifier, @Nullable ConnectorData bData) {
+    public @Nullable ConnectionType isConnected(@NotNull UUID aIdentifier, @Nullable ConnectorDevice aData,
+                                                @NotNull UUID bIdentifier, @Nullable ConnectorDevice bData) {
         if (aData == null) {
             aData = get(aIdentifier);
             if (aData == null) return ConnectionType.UNKNOWN;
@@ -119,8 +120,8 @@ public class AxonTree<T> extends SavedData {
      * @return the type of connection formed. Will return null if the downstream connector already has an upstream,
      * the two connectors are of the same level, or either are not registered to this tree.
      */
-    public @Nullable ConnectionType connect(@NotNull UUID aIdentifier, @Nullable ConnectorData aData,
-                                            @NotNull UUID bIdentifier, @Nullable ConnectorData bData) {
+    public @Nullable ConnectionType connect(@NotNull UUID aIdentifier, @Nullable ConnectorDevice aData,
+                                            @NotNull UUID bIdentifier, @Nullable ConnectorDevice bData) {
         if (aData == null) {
             aData = get(aIdentifier);
             if (aData == null) return null;
@@ -129,7 +130,7 @@ public class AxonTree<T> extends SavedData {
             bData = get(bIdentifier);
             if (bData == null) return null;
         }
-        ConnectionType type = aData.level.typeOf(bData.level);
+        ConnectionType type = SynapseUtil.actualTypeOf(aData, bData);
         // the check for an existing upstream covers the case that the two are already connected.
         if (type.upstream() && !aData.hasUpstream()) {
             aData.setUpstream(bIdentifier, bData);
@@ -153,8 +154,8 @@ public class AxonTree<T> extends SavedData {
      * @return whether a connection was removed. Fails if the connectors are not connected
      * or either is not registered to this tree.
      */
-    public boolean removeConnection(@NotNull UUID aIdentifier, @Nullable ConnectorData aData,
-                                    @NotNull UUID bIdentifier, @Nullable ConnectorData bData) {
+    public boolean removeConnection(@NotNull UUID aIdentifier, @Nullable ConnectorDevice aData,
+                                    @NotNull UUID bIdentifier, @Nullable ConnectorDevice bData) {
         if (aData == null) {
             aData = get(aIdentifier);
             if (aData == null) return false;
@@ -166,10 +167,10 @@ public class AxonTree<T> extends SavedData {
         ConnectionType type = isConnected(aIdentifier, aData, bIdentifier, bData);
         if (type == null) return false;
         if (type.upstream()) {
-            aData.removeUpstream();
+            aData.removeUpstream(bData);
             bData.removeDownstream(aIdentifier);
         } else if (type.downstream()) {
-            bData.removeUpstream();
+            bData.removeUpstream(aData);
             aData.removeDownstream(bIdentifier);
         } else {
             return false;
@@ -182,10 +183,10 @@ public class AxonTree<T> extends SavedData {
      * Finds connections matching the given address, starting from the given UUID.
      * @param from the UUID to search from
      * @param seek the address(es) to match
-     * @return null if {@code from} is not registered with this tree, otherwise the result of {@link #find(ConnectorData, AxonAddress)}
+     * @return null if {@code from} is not registered with this tree, otherwise the result of {@link #find(ConnectorDevice, Collection)}
      */
     public @Nullable List<Connection<T>> find(@NotNull UUID from, @NotNull Collection<AxonAddress> seek) {
-        ConnectorData data = members.get(from);
+        ConnectorDevice data = members.get(from);
         if (data == null) return null;
         return find(data, seek);
     }
@@ -196,26 +197,23 @@ public class AxonTree<T> extends SavedData {
      * @param seek the address(es) to match
      * @return connections that match the given address
      */
-    public @NotNull List<Connection<T>> find(@NotNull ConnectorData from, @NotNull Collection<AxonAddress> seek) {
-        if (seek.stream().filter(Objects::nonNull).anyMatch(address -> address.equals(from.address))) {
-            return List.of(new Connection<>(from.cap, List.of(), from.address));
-        }
+    public @NotNull List<Connection<T>> find(@NotNull ConnectorDevice from, @NotNull Collection<AxonAddress> seek) {
         List<Connection<T>> out = new ObjectArrayList<>();
         findRecurseOut(from, seek, out, new ObjectArrayList<>(ConnectorLevel.values().length), null);
         return out;
     }
 
-    protected void findRecurseOut(@NotNull ConnectorData from, @NotNull Collection<AxonAddress> seek,
+    protected void findRecurseOut(@NotNull ConnectorDevice from, @NotNull Collection<AxonAddress> seek,
                                   @NotNull List<Connection<T>> out, @NotNull List<AxonConnection> recurseDepth,
-                                  @Nullable ConnectorData previous) {
+                                  @Nullable ConnectorDevice previous) {
         // filter addresses to only those that match 'from'
         List<AxonAddress> matchingSeek = seek.stream().filter(Objects::nonNull)
-                .filter(address -> address.matchesAtAndAbove(from.address, from.level)).toList();
+                .filter(address -> address.matchesAtAndAbove(from.address, SynapseUtil.actualLevel(from))).toList();
         if (!matchingSeek.isEmpty()) {
             // short circuit inward if 'from' matches the seek
             findRecurseIn(from, matchingSeek, out, new ObjectArrayList<>(recurseDepth), previous);
         }
-        ConnectorData upstream = from.getUpstream();
+        ConnectorDevice upstream = from.getUpstream();
         if (upstream != null) {
             recurseDepth.add(from.upstreamConnection);
             // skip 'from' when we recurse inward from further out
@@ -223,20 +221,20 @@ public class AxonTree<T> extends SavedData {
         }
     }
 
-    protected void findRecurseIn(@NotNull ConnectorData from, @NotNull Collection<AxonAddress> seek,
+    protected void findRecurseIn(@NotNull ConnectorDevice from, @NotNull Collection<AxonAddress> seek,
                                  @NotNull List<Connection<T>> out, @NotNull List<AxonConnection> recurseDepth,
-                                 @Nullable ConnectorData visitedDownstream) {
+                                 @Nullable ConnectorDevice visitedDownstream) {
         if (seek.stream().filter(Objects::nonNull).anyMatch(address -> address.matches(from.address))) {
             out.add(new Connection<>(from.getCap(), recurseDepth, from.address));
         }
-        for (Iterator<ConnectorData> it = from.downstream(); it.hasNext(); ) {
-            ConnectorData downstream = it.next();
+        for (Iterator<ConnectorDevice> it = from.downstream(); it.hasNext(); ) {
+            ConnectorDevice downstream = it.next();
             if (downstream == visitedDownstream) continue;
             // discard non-matching seeks so that they don't start matching when they shouldn't.
             // we only need to check at the downstream level, because everything above that was
             // matched in findRecurseOut
             List<AxonAddress> matchingSeek = seek.stream().filter(Objects::nonNull)
-                    .filter(address -> address.matchesAt(downstream.address, downstream.level)).toList();
+                    .filter(address -> address.matchesAt(downstream.address, SynapseUtil.actualLevel(downstream))).toList();
             if (!matchingSeek.isEmpty()) {
                 List<AxonConnection> depth = new ObjectArrayList<>(recurseDepth);
                 depth.add(downstream.upstreamConnection);
@@ -251,7 +249,7 @@ public class AxonTree<T> extends SavedData {
         ListTag data = tag.getList("Data", Tag.TAG_COMPOUND);
         for (int i = 0; i < uuids.length / 4; i++) {
             UUID id = UUIDUtil.uuidFromIntArray(Arrays.copyOfRange(uuids, 4 * i, 4 * i + 4));
-            members.put(id, ConnectorData.from(this, data.getCompound(i)));
+            members.put(id, ConnectorDevice.from(this, data.getCompound(i)));
         }
     }
 
@@ -275,32 +273,36 @@ public class AxonTree<T> extends SavedData {
 
     public record Connection<T>(@Nullable T capability, List<AxonConnection> connection, @NotNull AxonAddress destination) {}
 
-    public final class ConnectorData implements INBTSerializable<CompoundTag> {
+    public final class ConnectorDevice implements INBTSerializable<CompoundTag>, ConnectorLevel.Provider {
         public static final UUID NO_UPSTREAM = new UUID(0, 0);
 
         private final @NotNull AxonAddress address;
 
-        public final @NotNull ConnectorLevel level;
+        private final @NotNull ConnectorLevel level;
         private @Nullable T cap;
 
         private @NotNull UUID upstream;
         private @NotNull AxonConnection upstreamConnection = new AxonConnection(getType());
-        private @Nullable ConnectorData upstreamCache;
-        private final @NotNull Map<UUID, ConnectorData> downstream;
+        private @Nullable ConnectorDevice upstreamCache;
+        private final @NotNull Map<UUID, ConnectorDevice> downstream;
 
-        public ConnectorData(short id, @NotNull ConnectorLevel level) {
+        private final @NotNull Map<DeviceDataKey<?>, Object> data;
+
+        public ConnectorDevice(short id, @NotNull ConnectorLevel level) {
             this.address = new AxonAddress();
             this.address.put(level, id);
             this.level = level;
             this.upstream = NO_UPSTREAM;
             downstream = new Reference2ObjectOpenHashMap<>();
+            data = new Object2ObjectOpenHashMap<>();
         }
 
-        private ConnectorData(@NotNull AxonAddress address, @NotNull ConnectorLevel level) {
+        private ConnectorDevice(@NotNull AxonAddress address, @NotNull ConnectorLevel level, Map<DeviceDataKey<?>, Object> data) {
             this.address = address;
             this.level = level;
             this.upstream = NO_UPSTREAM;
             downstream = new Reference2ObjectOpenHashMap<>();
+            this.data = data;
         }
 
         /**
@@ -312,12 +314,12 @@ public class AxonTree<T> extends SavedData {
             if (AxonAddress.isSpecialCharacter(id)) return IDSetResult.FAIL_SPECIAL_CODE;
             if (this.getId() == id) return IDSetResult.SUCCESS_UNCHANGED;
             if (hasUpstream()) {
-                for (@NotNull Iterator<ConnectorData> it = getUpstream().downstream(); it.hasNext(); ) {
-                    ConnectorData conflictCandidate = it.next();
+                for (@NotNull Iterator<ConnectorDevice> it = getUpstream().downstream(); it.hasNext(); ) {
+                    ConnectorDevice conflictCandidate = it.next();
                     if (id == conflictCandidate.getId()) return IDSetResult.FAIL_CHILD_CONFLICT;
                 }
             }
-            updateCascade(level, id);
+            updateCascade(a -> a.put(level, id));
             setDirty();
             return IDSetResult.SUCCESS;
         }
@@ -329,11 +331,11 @@ public class AxonTree<T> extends SavedData {
             return getAddress().getShort(level);
         }
 
-        private void updateCascade(@NotNull ConnectorLevel level, short id) {
-            address.put(level, id);
-            for (Iterator<ConnectorData> it = downstream(); it.hasNext(); ) {
-                ConnectorData downstream = it.next();
-                downstream.updateCascade(level, id);
+        private void updateCascade(Consumer<AxonAddress> action) {
+            action.accept(address);
+            for (Iterator<ConnectorDevice> it = downstream(); it.hasNext(); ) {
+                ConnectorDevice downstream = it.next();
+                downstream.updateCascade(action);
             }
         }
 
@@ -343,6 +345,15 @@ public class AxonTree<T> extends SavedData {
          */
         public @NotNull @UnmodifiableView AxonAddress getAddress() {
             return address;
+        }
+
+        public @NotNull ConnectorLevel getLevel() {
+            return level;
+        }
+
+        @Override
+        public @NotNull Map<DeviceDataKey<?>, Object> getData() {
+            return data;
         }
 
         /**
@@ -361,27 +372,26 @@ public class AxonTree<T> extends SavedData {
             return cap;
         }
 
-        void setUpstream(@NotNull UUID upstream, @NotNull ConnectorData upstreamCache) {
+        void setUpstream(@NotNull UUID upstream, @NotNull ConnectorDevice upstreamCache) {
             this.upstream = upstream;
             this.upstreamCache = upstreamCache;
             this.upstreamConnection = new AxonConnection(getType());
-            this.address.copyAbove(upstreamCache.address, level);
-
             // resolve any potential conflicts with already existing downstreams of our upstream
             ShortSet conflictCandidates = new ShortOpenHashSet(upstreamCache.downstream.size());
-            for (@NotNull Iterator<ConnectorData> it = upstreamCache.downstream(); it.hasNext(); ) {
-                ConnectorData conflictCandidate = it.next();
+            for (@NotNull Iterator<ConnectorDevice> it = upstreamCache.downstream(); it.hasNext(); ) {
+                ConnectorDevice conflictCandidate = it.next();
                 conflictCandidates.add(conflictCandidate.getId());
             }
             short id = getId();
             while (conflictCandidates.contains(id)) id = (short) (id * 31 + conflictCandidates.size());
-            setId(id);
+            this.address.put(level, id);
+            updateCascade(a -> a.copyAtAndAbove(this.upstreamCache.address, SynapseUtil.actualLevel(this)));
         }
 
-        void removeUpstream() {
+        void removeUpstream(@NotNull ConnectorDevice formerUpstream) {
             this.upstream = NO_UPSTREAM;
             this.upstreamCache = null;
-            this.address.clearAbove(level);
+            updateCascade(a -> a.clearAtAndAbove(SynapseUtil.actualLevel(formerUpstream)));
         }
 
         /**
@@ -394,14 +404,14 @@ public class AxonTree<T> extends SavedData {
         /**
          * @return the upstream connector.
          */
-        public @Nullable ConnectorData getUpstream() {
+        public @Nullable ConnectorDevice getUpstream() {
             if (upstream != NO_UPSTREAM && upstreamCache == null) {
                 upstreamCache = members.get(upstream);
             }
             return upstreamCache;
         }
 
-        void addDownstream(@NotNull UUID downstream, @Nullable ConnectorData downstreamCache) {
+        void addDownstream(@NotNull UUID downstream, @Nullable ConnectorDevice downstreamCache) {
             this.downstream.put(downstream, downstreamCache);
         }
 
@@ -412,7 +422,7 @@ public class AxonTree<T> extends SavedData {
         /**
          * @return an iterator through downstream connectors.
          */
-        public @NotNull Iterator<ConnectorData> downstream() {
+        public @NotNull Iterator<ConnectorDevice> downstream() {
             return new DownstreamIter();
         }
 
@@ -423,6 +433,8 @@ public class AxonTree<T> extends SavedData {
                     .ifLeft(tag -> dat.put("Address", tag));
             ConnectorLevel.CODEC.encodeStart(NbtOps.INSTANCE, this.level).get()
                     .ifLeft(tag -> dat.put("Level", tag));
+            DeviceDataKey.MAP_CODEC.encodeStart(NbtOps.INSTANCE, this.data).get()
+                    .ifLeft(tag -> dat.put("Data", tag));
 
             if (this.upstream != NO_UPSTREAM) {
                 dat.putUUID("Upstream", this.upstream);
@@ -439,11 +451,12 @@ public class AxonTree<T> extends SavedData {
             return dat;
         }
 
-        static <T> AxonTree<T>.@NotNull ConnectorData from(@NotNull AxonTree<T> tree, @NotNull CompoundTag nbt) {
-            AxonTree<T>.ConnectorData d = ConnectorLevel.CODEC.parse(NbtOps.INSTANCE, nbt.get("Level")).result()
-                    .map(connectionTier -> tree.new ConnectorData(AxonAddress.CODEC.parse(NbtOps.INSTANCE, nbt.get("Address"))
-                    .result().orElseGet(AxonAddress::new), connectionTier))
-                    .orElseGet(() -> tree.new ConnectorData((short) 0, ConnectorLevel.RELAY));
+        static <T> AxonTree<T>.@NotNull ConnectorDevice from(@NotNull AxonTree<T> tree, @NotNull CompoundTag nbt) {
+            AxonTree<T>.ConnectorDevice d = ConnectorLevel.CODEC.parse(NbtOps.INSTANCE, nbt.get("Level")).result()
+                    .map(connectionTier -> tree.new ConnectorDevice(AxonAddress.CODEC.parse(NbtOps.INSTANCE, nbt.get("Address"))
+                    .result().orElseGet(AxonAddress::new), connectionTier, DeviceDataKey.MAP_CODEC.parse(NbtOps.INSTANCE, nbt.get("Data"))
+                            .result().orElseGet(Object2ObjectOpenHashMap::new)))
+                    .orElseGet(() -> tree.new ConnectorDevice((short) 0, ConnectorLevel.CORRUPTED));
             d.deserializeNBT(nbt);
             return d;
         }
@@ -463,17 +476,17 @@ public class AxonTree<T> extends SavedData {
             }
         }
 
-        private final class DownstreamIter implements Iterator<ConnectorData> {
+        private final class DownstreamIter implements Iterator<ConnectorDevice> {
 
-            final Iterator<Map.Entry<UUID, ConnectorData>> backing = downstream.entrySet().iterator();
-            Map.Entry<UUID, ConnectorData> next;
+            final Iterator<Map.Entry<UUID, ConnectorDevice>> backing = downstream.entrySet().iterator();
+            Map.Entry<UUID, ConnectorDevice> next;
 
             @Override
             public boolean hasNext() {
                 while (next == null && backing.hasNext()) {
                     next = backing.next();
                     if (next.getValue() == null) {
-                        ConnectorData cache = members.get(next.getKey());
+                        ConnectorDevice cache = members.get(next.getKey());
                         if (cache == null) {
                             backing.remove();
                             next = null;
@@ -486,9 +499,9 @@ public class AxonTree<T> extends SavedData {
             }
 
             @Override
-            public ConnectorData next() {
+            public ConnectorDevice next() {
                 if (!hasNext()) throw new NoSuchElementException();
-                ConnectorData n = next.getValue();
+                ConnectorDevice n = next.getValue();
                 next = null;
                 return n;
             }

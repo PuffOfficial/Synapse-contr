@@ -27,13 +27,19 @@ public interface IAxonBlockEntity extends ICapabilityProvider, IForgeBlockEntity
 
     @NotNull String getNameBySlot(int slot);
 
-    default boolean allowsUpstream(int slot) {
+    default boolean allowsUpstream(int slot, LocalConnectorDevice upstream) {
         return slotIsActive(slot);
     }
 
-    default boolean allowsDownstream(int slot) {
+    default boolean allowsDownstream(int slot, LocalConnectorDevice downstream) {
         return slotIsActive(slot);
     }
 
     void setChanged();
+
+    boolean removeDownstream(@NotNull BlockPos pos);
+
+    boolean addDownstream(@NotNull BlockPos pos);
+
+    void onUpstreamRemoved();
 }

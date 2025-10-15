@@ -1,5 +1,6 @@
 package com.m_w_k.synapse.common.connect;
 
+import com.m_w_k.synapse.api.connect.AxonConnection;
 import com.m_w_k.synapse.api.connect.AxonType;
 import com.m_w_k.synapse.api.connect.ConnectionType;
 import com.m_w_k.synapse.common.item.AxonItem;
@@ -26,7 +27,7 @@ public final class LocalAxonConnection extends AxonConnection {
                     Codec.INT.fieldOf("targetSlot").forGetter(LocalAxonConnection::getTargetSlot),
                     Vec3.CODEC.fieldOf("targetRenderOffset").forGetter(LocalAxonConnection::getTargetRenderOffset),
                     AxonType.CODEC.fieldOf("axonType").forGetter(AxonConnection::getAxonType),
-                    CompoundTag.CODEC.fieldOf("data").forGetter(AxonConnection::getData),
+                    CompoundTag.CODEC.fieldOf("data").forGetter(LocalAxonConnection::getData),
                     Codec.INT.xmap(i -> ConnectionType.TYPES[i], ConnectionType::ordinal).fieldOf("connectionType").forGetter(AxonConnection::getConnectionType)
             ).apply(instance, LocalAxonConnection::new));
 

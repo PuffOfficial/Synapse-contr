@@ -23,7 +23,7 @@ import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import org.slf4j.Logger;
 
 @Mod(SynapseMod.MODID)
-public class SynapseMod {
+public final class SynapseMod {
     public static final String MODID = "synapse";
     private static final Logger LOGGER = LogUtils.getLogger();
 
