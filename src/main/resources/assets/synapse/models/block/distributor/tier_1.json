@@ -4,9 +4,9 @@
 	"texture_size": [64, 64],
 	"textures": {
 		"0": "synapse:block/distributor/1/frame",
-		"2": "synapse:block/distributor/1/corner",
+		"2": "synapse:block/distributor/1/corners",
 		"3": "synapse:block/distributor/1/core",
-		"particle": "synapse:block/distributor/1/corner"
+		"particle": "synapse:block/distributor/1/corners"
 	},
 	"elements": [
 		{

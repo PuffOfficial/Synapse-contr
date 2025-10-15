@@ -1,4 +1,4 @@
-// 1.20.1	2025-10-11T12:48:08.000729	Recipes
+// 1.20.1	2025-10-15T13:27:40.801721	Recipes
 d79d98184e7d1d240eed1449b8857d92cbe2f7c4 data/synapse/advancements/recipes/misc/axon.energy.json
 07ad865ea908a7c52281cf894dacfa66298e49a0 data/synapse/advancements/recipes/misc/axon.fluid.json
 e09c18f8f42b5e89ea451726fd043f4789f77027 data/synapse/advancements/recipes/misc/axon.item.json
@@ -12,6 +12,7 @@ e521d78f0f031f1dc78087a7e163f71aecf8671b data/synapse/advancements/recipes/misc/
 4f75cd54a7fc22c7cc25e72312bfbdd556efc615 data/synapse/advancements/recipes/misc/magma_crystal.json
 57ee242b453d9b076ed06bab093db064363d2762 data/synapse/advancements/recipes/misc/neural_thread.json
 4d7d46271c8e382eb6a3b534231df4b099a6971c data/synapse/advancements/recipes/misc/piezoelectric_crystal.json
+389a91fd92de99cf4b6b95ab9c0761ad4d1e179b data/synapse/advancements/recipes/misc/relay.json
 965dbcc15b82eeb0e8076834eebfbb09f350e6b6 data/synapse/advancements/recipes/misc/transfer_powder.json
 47d2bac0fc19c96ae6fbb402a5a656b775040f00 data/synapse/advancements/recipes/misc/wetware_chip.json
 6ee13d275fdfda0453a5ee2adef976d097e8584b data/synapse/recipes/axon.energy.json
@@ -27,5 +28,6 @@ c3e2291b8bf47f504a3920b3dc49e0950a68e0fd data/synapse/recipes/duned_gold_ingot.j
 04799e01d829295984aacb875e862051a896daab data/synapse/recipes/magma_crystal.json
 b020175b8dee6aa186acbda35c34dc79cd184237 data/synapse/recipes/neural_thread.json
 3a0ed5eef88370c7e2da4e432eedf258ee7bedc4 data/synapse/recipes/piezoelectric_crystal.json
+f1e9b3770aa79847b05ae612b1bae4691efb42ba data/synapse/recipes/relay.json
 6a65736e464a516e57740167c7ba3bace44a12d6 data/synapse/recipes/transfer_powder.json
 9fb48a358cdcc27c0711418b7b4a71e0222f6b13 data/synapse/recipes/wetware_chip.json

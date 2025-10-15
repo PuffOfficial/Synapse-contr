@@ -117,6 +117,16 @@ public final class SynapseRecipeProvider extends RecipeProvider {
                 .unlockedBy("has_biosteel", has(SynapseItemRegistry.BIOSTEEL.get()))
                 .save(writer);
 
+        ShapedRecipeBuilder.shaped(RecipeCategory.MISC, SynapseBlockRegistry.RELAY.get(), 2)
+                .pattern("b b")
+                .pattern("tct")
+                .pattern("b b")
+                .define('b', SynapseItemRegistry.BIOSTEEL.get())
+                .define('c', SynapseItemRegistry.WETWARE_CHIP.get())
+                .define('t', SynapseItemRegistry.NEURAL_THREAD.get())
+                .unlockedBy("has_biosteel", has(SynapseItemRegistry.BIOSTEEL.get()))
+                .save(writer);
+
         ShapedRecipeBuilder.shaped(RecipeCategory.MISC, SynapseBlockRegistry.DISTRIBUTOR_BLOCK_1.get())
                 .pattern("gbg")
                 .pattern("tct")
