@@ -1,0 +1,35 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_spider_eyes": {
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "minecraft:spider_eye"
+            ]
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_the_recipe": {
+      "conditions": {
+        "recipe": "synapse:wetware_chip"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    }
+  },
+  "requirements": [
+    [
+      "has_spider_eyes",
+      "has_the_recipe"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "synapse:wetware_chip"
+    ]
+  },
+  "sends_telemetry_event": false
+}

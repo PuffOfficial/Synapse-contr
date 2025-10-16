@@ -3,6 +3,7 @@ package com.m_w_k.synapse.common.connect;
 import com.m_w_k.synapse.api.connect.*;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import net.minecraft.core.UUIDUtil;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraftforge.common.capabilities.Capability;
@@ -13,34 +14,39 @@ import org.jetbrains.annotations.UnmodifiableView;
 
 import java.util.*;
 
-public final class LocalConnectorDevice {
+public final class LocalConnectorDevice implements ConnectorLevel.Provider {
     public static final Codec<LocalConnectorDevice> CODEC = RecordCodecBuilder.create(instance ->
             instance.group(
                     AxonType.CODEC.fieldOf("type").forGetter(LocalConnectorDevice::type),
-                    ConnectorLevel.CODEC.fieldOf("level").forGetter(LocalConnectorDevice::level),
+                    ConnectorLevel.CODEC.fieldOf("level").forGetter(LocalConnectorDevice::getLevel),
                     UUIDUtil.CODEC.fieldOf("treeID").forGetter(LocalConnectorDevice::treeID),
-                    LocalAxonConnection.CODEC.optionalFieldOf("upstream").forGetter(d -> Optional.ofNullable(d.upstream()))
+                    LocalAxonConnection.CODEC.optionalFieldOf("upstream").forGetter(d -> Optional.ofNullable(d.upstream())),
+                    DeviceDataKey.MAP_CODEC.fieldOf("data").forGetter(LocalConnectorDevice::getData)
             ).apply(instance, LocalConnectorDevice::new));
     private final @NotNull AxonType type;
     private final @NotNull ConnectorLevel level;
     private final @NotNull UUID treeID;
 
     private @Nullable LocalAxonConnection upstream;
-    private @Nullable AxonTree<?>.ConnectorData cache;
+    private @Nullable AxonTree<?>.ConnectorDevice cache;
+
+    private final @NotNull Map<DeviceDataKey<?>, Object> data;
 
     @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
     private LocalConnectorDevice(@NotNull AxonType type, @NotNull ConnectorLevel level, @NotNull UUID treeID,
-                                 Optional<LocalAxonConnection> upstream) {
+                                 Optional<LocalAxonConnection> upstream, Map<DeviceDataKey<?>, Object> data) {
         this.type = type;
         this.level = level;
         this.treeID = treeID;
         this.upstream = upstream.orElse(null);
+        this.data = data;
     }
 
     public LocalConnectorDevice(@NotNull AxonType type, @NotNull ConnectorLevel level, @NotNull UUID treeID) {
         this.type = type;
         this.level = level;
         this.treeID = treeID;
+        this.data = new Object2ObjectOpenHashMap<>();
     }
 
     public LocalConnectorDevice(@NotNull AxonType type, @NotNull ConnectorLevel level) {
@@ -55,7 +61,7 @@ public final class LocalConnectorDevice {
     @Contract("_, _, _ -> this")
     public <T> LocalConnectorDevice ensureRegistered(@NotNull LevelAccessor level, @NotNull Capability<T> cap, @Nullable T instance) {
         AxonTree.load(level, type, cap).ifPresent(
-                t -> cache = t.register(treeID, randShort(), level(), instance));
+                t -> cache = t.register(treeID, randShort(), getLevel(), instance));
         return this;
     }
 
@@ -69,7 +75,7 @@ public final class LocalConnectorDevice {
         return cache() == null;
     }
 
-    private @Nullable AxonTree<?>.ConnectorData cache() {
+    public @Nullable AxonTree<?>.ConnectorDevice cache() {
         return cache;
     }
 
@@ -92,8 +98,14 @@ public final class LocalConnectorDevice {
         return type;
     }
 
-    public @NotNull ConnectorLevel level() {
+    @Override
+    public @NotNull ConnectorLevel getLevel() {
         return level;
+    }
+
+    @Override
+    public @NotNull Map<DeviceDataKey<?>, Object> getData() {
+        return data;
     }
 
     public @NotNull UUID treeID() {

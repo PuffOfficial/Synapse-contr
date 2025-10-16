@@ -21,5 +21,14 @@
   "synapse.menu.button.ruleset.incoming": "Filters Incoming",
   "synapse.menu.button.ruleset.outgoing": "Filters Outgoing",
   "synapse.menu.ruleset.address_config": "Rule Address",
-  "synapse.menu.button.ruleset.item": "Filter Item"
+  "synapse.menu.button.ruleset.item": "Filter Item",
+
+  "item.synapse.biosteel_ingot": "Biosteel Ingot",
+  "item.synapse.duned_gold_ingot": "Duned Gold Ingot",
+  "item.synapse.transfer_powder": "Transference Powder",
+  "item.synapse.neural_thread": "Neural Thread",
+  "item.synapse.wetware_chip": "Primitive Wetware Chip",
+  "item.synapse.piezoelectric_crystal": "Piezoelectric Crystal",
+  "item.synapse.magma_crystal": "Magma Crystal",
+  "item.synapse.ender_crystal": "Ender Crystal"
 }

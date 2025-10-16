@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "tag": "forge:ingots/gold"
+    },
+    {
+      "tag": "forge:bones"
+    },
+    {
+      "tag": "forge:bones"
+    },
+    {
+      "tag": "forge:sand"
+    }
+  ],
+  "result": {
+    "item": "synapse:duned_gold_ingot"
+  }
+}

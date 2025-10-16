@@ -1,5 +1,6 @@
 package com.m_w_k.synapse.common.block;
 
+import com.m_w_k.synapse.SynapseUtil;
 import com.m_w_k.synapse.api.block.AxonDeviceDefinitions;
 import com.m_w_k.synapse.api.connect.AxonTree;
 import com.m_w_k.synapse.api.connect.AxonType;
@@ -26,7 +27,6 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraftforge.network.NetworkHooks;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 public abstract class AxonBlock extends BaseEntityBlock {
     public AxonBlock(Properties p_49795_) {
@@ -64,6 +64,10 @@ public abstract class AxonBlock extends BaseEntityBlock {
 
         AxonType type = iAxon.getType();
         int themSlot = iAxon.getConnectSlot(stack);
+        if (themSlot > themAxon.getSlots()) {
+            iAxon.clearConnectData(stack);
+            return InteractionResult.FAIL;
+        }
         LocalConnectorDevice us = usAxon.getBySlot(usSlot);
         if (us.type() != type) {
             iAxon.clearConnectData(stack);
@@ -74,11 +78,12 @@ public abstract class AxonBlock extends BaseEntityBlock {
             iAxon.clearConnectData(stack);
             return InteractionResult.FAIL;
         }
-        ConnectionType direction = us.level().typeOf(them.level());
+        ConnectionType direction = SynapseUtil.actualTypeOf(us, them);
         us.ensureRegistered(level);
         them.ensureRegistered(level);
         if (direction.upstream()) {
-            if (us.upstream() != null) return InteractionResult.FAIL;
+            if (us.upstream() != null || !usAxon.allowsUpstream(usSlot, them) ||
+                    !themAxon.allowsDownstream(themSlot, us)) return InteractionResult.FAIL;
             LocalAxonConnection connection = new LocalAxonConnection(iAxon, usSlot, usAxon.renderOffsetForSlot(usSlot),
                     connect, themSlot, themAxon.renderOffsetForSlot(themSlot), type, direction);
             if (iAxon.consumeToPlace(connection, stack, player, false)) {
@@ -92,7 +97,8 @@ public abstract class AxonBlock extends BaseEntityBlock {
                 return InteractionResult.sidedSuccess(level.isClientSide);
             }
         } else if (direction.downstream()) {
-            if (them.upstream() != null) return InteractionResult.FAIL;
+            if (them.upstream() != null || !themAxon.allowsUpstream(themSlot, us) ||
+                    !usAxon.allowsDownstream(usSlot, them)) return InteractionResult.FAIL;
             LocalAxonConnection connection = new LocalAxonConnection(iAxon, themSlot, themAxon.renderOffsetForSlot(themSlot),
                     pos, usSlot, usAxon.renderOffsetForSlot(usSlot), type, direction.flip());
             if (iAxon.consumeToPlace(connection, stack, player, false)) {

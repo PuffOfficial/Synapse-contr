@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "b": {
+      "item": "synapse:biosteel_ingot"
+    },
+    "c": {
+      "item": "synapse:wetware_chip"
+    },
+    "g": {
+      "item": "synapse:duned_gold_ingot"
+    },
+    "t": {
+      "item": "synapse:magma_crystal"
+    }
+  },
+  "pattern": [
+    "gbg",
+    "tct",
+    "gbg"
+  ],
+  "result": {
+    "item": "synapse:distributor_block_2"
+  },
+  "show_notification": true
+}

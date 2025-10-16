@@ -3,13 +3,16 @@ package com.m_w_k.synapse;
 import com.m_w_k.synapse.client.gui.BasicConnectorScreen;
 import com.m_w_k.synapse.client.gui.EndpointScreen;
 import com.m_w_k.synapse.client.renderer.TestAxonRenderer;
+import com.m_w_k.synapse.data.SynapseAdvancementGen;
 import com.m_w_k.synapse.common.menu.EndpointMenu;
 import com.m_w_k.synapse.data.SynapseLootTableGen;
+import com.m_w_k.synapse.data.SynapseRecipeProvider;
 import com.m_w_k.synapse.network.SynapsePacketHandler;
 import com.m_w_k.synapse.registry.*;
 import com.mojang.logging.LogUtils;
 import net.minecraft.client.gui.screens.MenuScreens;
 import net.minecraft.data.DataGenerator;
+import net.minecraft.data.DataProvider;
 import net.minecraft.data.PackOutput;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.inventory.MenuType;
@@ -23,7 +26,7 @@ import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import org.slf4j.Logger;
 
 @Mod(SynapseMod.MODID)
-public class SynapseMod {
+public final class SynapseMod {
     public static final String MODID = "synapse";
     private static final Logger LOGGER = LogUtils.getLogger();
 
@@ -55,7 +58,9 @@ public class SynapseMod {
         DataGenerator gen = event.getGenerator();
         PackOutput packOutput = gen.getPackOutput();
         ExistingFileHelper helper = event.getExistingFileHelper();
-        gen.addProvider(event.includeServer(), SynapseLootTableGen.INSTANCE);
+        gen.addProvider(event.includeServer(), new SynapseLootTableGen());
+        gen.addProvider(event.includeServer(), new SynapseRecipeProvider(packOutput));
+        gen.addProvider(event.includeServer(), new SynapseAdvancementGen(event.getLookupProvider(), helper));
     }
 
     private void clientSetup(FMLClientSetupEvent event) {

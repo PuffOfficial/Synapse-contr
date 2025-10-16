@@ -179,7 +179,7 @@ public class BasicConnectorMenu extends AbstractContainerMenu {
         BitSet active = evaluateActiveness(be);
         ClientboundBasicDeviceDataPacket packet = active.get(device) ?
                 new ClientboundBasicDeviceDataPacket(active, device, be.getBySlot(device).ensureRegistered(be.getLevel()), result)
-                : new ClientboundBasicDeviceDataPacket(active, device, null, ConnectorLevel.RELAY, result);
+                : new ClientboundBasicDeviceDataPacket(active, device, null, ConnectorLevel.CORRUPTED, result);
         SynapsePacketHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> player), packet);
     }
 

@@ -1,0 +1,25 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "b": {
+      "item": "synapse:biosteel_ingot"
+    },
+    "c": {
+      "item": "synapse:wetware_chip"
+    },
+    "t": {
+      "item": "synapse:neural_thread"
+    }
+  },
+  "pattern": [
+    "b b",
+    "tct",
+    "b b"
+  ],
+  "result": {
+    "count": 2,
+    "item": "synapse:relay"
+  },
+  "show_notification": true
+}

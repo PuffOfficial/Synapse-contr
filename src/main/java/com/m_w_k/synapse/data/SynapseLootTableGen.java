@@ -2,6 +2,7 @@ package com.m_w_k.synapse.data;
 
 import com.m_w_k.synapse.SynapseMod;
 import com.m_w_k.synapse.common.block.EndpointBlock;
+import com.m_w_k.synapse.common.block.RelayBlock;
 import com.m_w_k.synapse.registry.SynapseBlockRegistry;
 import net.minecraft.advancements.critereon.StatePropertiesPredicate;
 import net.minecraft.data.DataProvider;
@@ -28,9 +29,6 @@ import java.util.List;
 import java.util.Set;
 
 public final class SynapseLootTableGen implements DataProvider.Factory<LootTableProvider> {
-    public static final SynapseLootTableGen INSTANCE = new SynapseLootTableGen();
-
-    private SynapseLootTableGen() {}
 
     @Override
     public @NotNull LootTableProvider create(@NotNull PackOutput output) {
@@ -39,7 +37,7 @@ public final class SynapseLootTableGen implements DataProvider.Factory<LootTable
         ));
     }
 
-    protected static final class BlockSubProvider extends BlockLootSubProvider {
+    private static final class BlockSubProvider extends BlockLootSubProvider {
 
         public BlockSubProvider() {
             super(Set.of(), FeatureFlags.REGISTRY.allFlags());
@@ -55,6 +53,11 @@ public final class SynapseLootTableGen implements DataProvider.Factory<LootTable
 
         @Override
         protected void generate() {
+            this.dropSelf(SynapseBlockRegistry.DISTRIBUTOR_BLOCK_1.get());
+            this.dropSelf(SynapseBlockRegistry.DISTRIBUTOR_BLOCK_2.get());
+            this.dropSelf(SynapseBlockRegistry.DISTRIBUTOR_BLOCK_3.get());
+            this.dropSelf(SynapseBlockRegistry.DISTRIBUTOR_ALIAS_SYSTEM_SERVER.get());
+
             this.add(SynapseBlockRegistry.ENDPOINT_BASIC.get(), (block) -> LootTable.lootTable().withPool(
                     LootPool.lootPool().setRolls(ConstantValue.exactly(1.0F))
                             .add(this.applyExplosionDecay(SynapseBlockRegistry.ENDPOINT_BASIC.get(),
@@ -63,9 +66,14 @@ public final class SynapseLootTableGen implements DataProvider.Factory<LootTable
                                                     .when(LootItemBlockStatePropertyCondition.hasBlockStateProperties(block)
                                                             .setProperties(StatePropertiesPredicate.Builder.properties()
                                                                     .hasProperty(EndpointBlock.ENDPOINTS, i))))))));
-            this.dropSelf(SynapseBlockRegistry.DISTRIBUTOR_BLOCK_1.get());
-            this.dropSelf(SynapseBlockRegistry.DISTRIBUTOR_BLOCK_2.get());
-            this.dropSelf(SynapseBlockRegistry.DISTRIBUTOR_BLOCK_3.get());
+            this.add(SynapseBlockRegistry.RELAY.get(), (block) -> LootTable.lootTable().withPool(
+                    LootPool.lootPool().setRolls(ConstantValue.exactly(1.0F))
+                            .add(this.applyExplosionDecay(SynapseBlockRegistry.RELAY.get(),
+                                    LootItem.lootTableItem(block).apply(List.of(2, 3, 4),
+                                            (i) -> SetItemCountFunction.setCount(ConstantValue.exactly((float) i))
+                                                    .when(LootItemBlockStatePropertyCondition.hasBlockStateProperties(block)
+                                                            .setProperties(StatePropertiesPredicate.Builder.properties()
+                                                                    .hasProperty(RelayBlock.RELAYS, i))))))));
         }
     }
 }

@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "tag": "forge:gems/quartz"
+    },
+    {
+      "tag": "forge:gems/prismarine"
+    },
+    {
+      "tag": "forge:gems/prismarine"
+    },
+    {
+      "item": "minecraft:packed_ice"
+    }
+  ],
+  "result": {
+    "item": "synapse:piezoelectric_crystal"
+  }
+}

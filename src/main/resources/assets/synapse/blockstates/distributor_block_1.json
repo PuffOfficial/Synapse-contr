@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "synapse:block/distributor/tier_1"
+    }
+  }
+}
